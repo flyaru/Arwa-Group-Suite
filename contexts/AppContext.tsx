@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry } from '../types';
 
@@ -10,18 +9,34 @@ type AnimationState = {
     userName?: string;
 };
 
+const DEFAULT_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxUFvM8wnSsif2DQfg0raordYGddoF-leXTb_6XhYlOxoG9tBfEnI-lMtObgZucZHBF6Q/exec';
+
 // --- API Helper ---
 async function apiCall(url: string, action: string, payload?: any) {
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ action, payload }),
         redirect: 'follow'
     });
-    if (!response.ok) throw new Error(`API call failed for action: ${action}`);
-    const result = await response.json();
-    if (result.status === 'error') throw new Error(result.message);
-    return result.data;
+
+    if (!response.ok) {
+        throw new Error(`API call failed for action: ${action}. Status: ${response.status}`);
+    }
+
+    const text = await response.text();
+    try {
+        const result = JSON.parse(text);
+        if (result.status === 'error') {
+            throw new Error(result.message || 'An unknown backend error occurred.');
+        }
+        return result.data;
+    } catch (e) {
+        console.error("Failed to parse API response:", text);
+        throw new Error("Received an invalid response from the backend.");
+    }
 }
 
 
@@ -114,7 +129,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [animationState, setAnimationState] = useState<AnimationState>({ show: false, type: null, userName: '' });
     
     // Backend and Data State
-    const [appsScriptUrl, _setAppsScriptUrl] = useState<string | null>(() => localStorage.getItem('appsScriptUrl'));
+    const [appsScriptUrl, _setAppsScriptUrl] = useState<string | null>(() => {
+        const storedUrl = localStorage.getItem('appsScriptUrl');
+        if (storedUrl) {
+            return storedUrl;
+        }
+        // If no URL is stored, use the default and store it.
+        localStorage.setItem('appsScriptUrl', DEFAULT_BACKEND_URL);
+        return DEFAULT_BACKEND_URL;
+    });
     const [isBackendConnected, setIsBackendConnected] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [backendError, setBackendError] = useState<string | null>(null);
@@ -215,7 +238,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             ...logData,
         };
         setAuditLog(prev => [newLogEntry, ...prev]);
-        await apiCall(appsScriptUrl, 'add', { entity: 'auditLog', data: newLogEntry });
+        await apiCall(appsScriptUrl, 'add', { entity: 'AuditLog', data: newLogEntry });
     };
 
     const triggerAnimation = (type: AnimationState['type'], userName?: string, callback?: () => void) => {
@@ -248,20 +271,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
 
     // --- SPECIFIC IMPLEMENTATIONS ---
-    const addDsr = async (dsr: DSR) => { await addEntity('dsrs', dsr, setDsrs); };
-    const updateDsr = async (updatedDsr: DSR) => { await updateEntity('dsrs', updatedDsr.id, updatedDsr, setDsrs); };
-    const bulkDeleteDsrs = async (dsrIds: string[]) => { await bulkDeleteEntity('dsrs', dsrIds, setDsrs); };
+    const addDsr = async (dsr: DSR) => { await addEntity('DSRs', dsr, setDsrs); };
+    const updateDsr = async (updatedDsr: DSR) => { await updateEntity('DSRs', updatedDsr.id, updatedDsr, setDsrs); };
+    const bulkDeleteDsrs = async (dsrIds: string[]) => { await bulkDeleteEntity('DSRs', dsrIds, setDsrs); };
 
-    const addInvoice = async (invoice: Invoice) => { await addEntity('invoices', invoice, setInvoices); };
-    const updateInvoice = async (updatedInvoice: Invoice) => { await updateEntity('invoices', updatedInvoice.id, updatedInvoice, setInvoices); };
-    const bulkDeleteInvoices = async (invoiceIds: string[]) => { await bulkDeleteEntity('invoices', invoiceIds, setInvoices); };
+    const addInvoice = async (invoice: Invoice) => { await addEntity('Invoices', invoice, setInvoices); };
+    const updateInvoice = async (updatedInvoice: Invoice) => { await updateEntity('Invoices', updatedInvoice.id, updatedInvoice, setInvoices); };
+    const bulkDeleteInvoices = async (invoiceIds: string[]) => { await bulkDeleteEntity('Invoices', invoiceIds, setInvoices); };
 
     const addSupplierBill = async (bill: Omit<SupplierBill, 'id'>) => {
         const newBill = { id: `BILL-${Date.now()}`, ...bill };
-        await addEntity('supplierBills', newBill, setSupplierBills);
+        await addEntity('SupplierBills', newBill, setSupplierBills);
     };
-    const updateSupplierBillStatus = async (billId: string, status: SupplierBill['status']) => { await updateEntity('supplierBills', billId, { status }, setSupplierBills); };
-    const bulkDeleteSupplierBills = async (billIds: string[]) => { await bulkDeleteEntity('supplierBills', billIds, setSupplierBills); };
+    const updateSupplierBillStatus = async (billId: string, status: SupplierBill['status']) => { await updateEntity('SupplierBills', billId, { status }, setSupplierBills); };
+    const bulkDeleteSupplierBills = async (billIds: string[]) => { await bulkDeleteEntity('SupplierBills', billIds, setSupplierBills); };
     
     const bulkMarkBills = async (entity: string, ids: string[], stateUpdater: React.Dispatch<React.SetStateAction<any[]>>) => {
         if (!appsScriptUrl) throw new Error("Backend not connected");
@@ -269,18 +292,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         await apiCall(appsScriptUrl, 'bulkUpdate', { entity, updates });
         stateUpdater(prev => prev.map(item => ids.includes(item.id) ? { ...item, status: 'paid' } : item));
     };
-    // FIX: Corrected typo from bulkBills to bulkMarkBills
-    const bulkMarkSupplierBillsAsPaid = (billIds: string[]) => bulkMarkBills('supplierBills', billIds, setSupplierBills);
+    
+    const bulkMarkSupplierBillsAsPaid = (billIds: string[]) => bulkMarkBills('SupplierBills', billIds, setSupplierBills);
     
     const bulkMarkInvoicesAsPaid = async (invoiceIds: string[]) => {
         if (!appsScriptUrl) throw new Error("Backend not connected");
         
-        await bulkMarkBills('invoices', invoiceIds, setInvoices);
+        await bulkMarkBills('Invoices', invoiceIds, setInvoices);
 
         // This part is complex to do efficiently without many API calls.
         // For now, we refetch customers to update their total spend.
         // A more advanced backend would handle this calculation.
-        const updatedCustomers = await apiCall(appsScriptUrl, 'getAll', { entity: 'customers' });
+        const updatedCustomers = await apiCall(appsScriptUrl, 'getAll', { entity: 'Customers' });
         setCustomers(updatedCustomers);
     };
 
@@ -292,7 +315,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             await updateInvoice({ ...invoiceToUpdate, status: 'paid' });
 
             // Refetch customers to update their total spend.
-            const updatedCustomers = await apiCall(appsScriptUrl, 'getAll', { entity: 'customers' });
+            const updatedCustomers = await apiCall(appsScriptUrl, 'getAll', { entity: 'Customers' });
             setCustomers(updatedCustomers);
         }
     };
@@ -316,54 +339,54 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             totalSpend: 0,
             ...customerData,
         };
-        return await addEntity('customers', newCustomer, setCustomers) as Customer;
+        return await addEntity('Customers', newCustomer, setCustomers) as Customer;
     };
-    const bulkDeleteCustomers = async (customerIds: string[]) => { await bulkDeleteEntity('customers', customerIds, setCustomers); };
+    const bulkDeleteCustomers = async (customerIds: string[]) => { await bulkDeleteEntity('Customers', customerIds, setCustomers); };
     
     const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
         const newSupplier: Supplier = { id: `SUP-${Date.now()}`, ...supplier };
-        await addEntity('suppliers', newSupplier, setSuppliers);
+        await addEntity('Suppliers', newSupplier, setSuppliers);
     };
     
     const addTraveler = async (traveler: Omit<Traveler, 'id'>) => {
         const newTraveler: Traveler = { id: `TR-${Date.now()}`, ...traveler };
-        await addEntity('travelers', newTraveler, setTravelers);
+        await addEntity('Travelers', newTraveler, setTravelers);
     };
     
     const addEmployee = async (employeeData: Omit<User, 'id'>) => {
         const newEmployee: User = { id: `EMP-${Date.now()}`, ...employeeData };
-        await addEntity('users', newEmployee, setEmployees);
+        await addEntity('Users', newEmployee, setEmployees);
     };
-    const updateEmployee = async (updatedEmployee: User) => { await updateEntity('users', updatedEmployee.id, updatedEmployee, setEmployees); };
+    const updateEmployee = async (updatedEmployee: User) => { await updateEntity('Users', updatedEmployee.id, updatedEmployee, setEmployees); };
 
     const requestLeave = async (request: Omit<LeaveRequest, 'id' | 'status'>) => {
         const newRequest = { id: `LR-${Date.now()}`, status: 'pending' as 'pending', ...request };
-        await addEntity('leaveRequests', newRequest, setLeaveRequests);
+        await addEntity('LeaveRequests', newRequest, setLeaveRequests);
     };
-    const updateLeaveStatus = async (requestId: string, status: LeaveRequest['status']) => { await updateEntity('leaveRequests', requestId, { status }, setLeaveRequests); };
+    const updateLeaveStatus = async (requestId: string, status: LeaveRequest['status']) => { await updateEntity('LeaveRequests', requestId, { status }, setLeaveRequests); };
 
     const clockIn = async (userId: string, userName: string) => {
-        const newRecord = { id: `ATT-${Date.now()}`, employeeId: userId, employeeName: userName, clockInTime: new Date().toISOString() };
-        await addEntity('attendanceLog', newRecord, setAttendanceLog);
+        const newRecord = { id: `ATT-${Date.now()}`, employeeId: userId, employeeName: userName, clockInTime: new Date().toISOString(), clockOutTime: null };
+        await addEntity('AttendanceLog', newRecord, setAttendanceLog);
         setCurrentUserAttendanceStatus('in');
     };
 
     const clockOut = async (userId: string) => {
         const lastRecord = attendanceLog.find(att => att.employeeId === userId && !att.clockOutTime);
         if (lastRecord) {
-            await updateEntity('attendanceLog', lastRecord.id, { clockOutTime: new Date().toISOString() }, setAttendanceLog);
+            await updateEntity('AttendanceLog', lastRecord.id, { clockOutTime: new Date().toISOString() }, setAttendanceLog);
         }
         setCurrentUserAttendanceStatus('out');
     };
 
     const initiateHandover = async (handover: Omit<CashHandover, 'id' | 'status' | 'dateInitiated'>) => {
         const newHandover = { id: `CH-${Date.now()}`, status: 'pending' as 'pending', dateInitiated: new Date().toISOString(), ...handover };
-        await addEntity('cashHandovers', newHandover, setCashHandovers);
+        await addEntity('CashHandovers', newHandover, setCashHandovers);
     };
     
     const confirmHandover = async (handoverId: string, managerId: string, managerName: string) => {
         const data = { status: 'confirmed' as 'confirmed', managerId, managerName, dateConfirmed: new Date().toISOString() };
-        await updateEntity('cashHandovers', handoverId, data, setCashHandovers);
+        await updateEntity('CashHandovers', handoverId, data, setCashHandovers);
     };
 
     return (

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,9 +28,10 @@ const LoginPage: React.FC = () => {
                 setError('Invalid username or password.');
                 setIsLoading(false);
             }
-        } catch (err) {
-            setError('An unexpected error occurred.');
-             setIsLoading(false);
+        } catch (err: any) {
+            // Display a more specific error from the AuthContext
+            setError(err.message || 'An unexpected error occurred.');
+            setIsLoading(false);
         }
     };
 
@@ -73,7 +73,7 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    {error && <p className="text-sm text-red-400">{error}</p>}
+                    {error && <p className="text-sm text-red-400 text-center">{error}</p>}
                     <button
                         type="submit"
                         disabled={isLoading}

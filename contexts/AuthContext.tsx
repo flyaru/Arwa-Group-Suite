@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import type { User } from '../types';
 import { useApp } from './AppContext';
@@ -23,36 +22,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // The password check remains client-side for this demo version.
         // In a real-world scenario, you'd send a hashed password to the backend.
-        if (pass === 'Airbus@320') {
-            try {
-                const response = await fetch(appsScriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'login', payload: { username } }),
-                    redirect: 'follow'
-                });
-                const result = await response.json();
-
-                if (result.status === 'success' && result.data) {
-                    const foundUser: User = result.data;
-                    setUser(foundUser);
-                    await logAction({
-                        userId: foundUser.id,
-                        userName: foundUser.name,
-                        action: 'USER_LOGIN',
-                        details: `User ${foundUser.name} logged in.`,
-                        targetId: foundUser.id,
-                    });
-                    return foundUser;
-                } else {
-                     throw new Error(result.message || 'User not found');
-                }
-            } catch (error) {
-                console.error("Login API call failed:", error);
-                throw new Error("Failed to connect to the login service.");
-            }
+        if (pass !== 'Airbus@320') {
+            return null;
         }
-        return null;
+
+        try {
+            const response = await fetch(appsScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'login', payload: { username } }),
+                redirect: 'follow'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Login request failed with status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+
+            if (result.status === 'success' && result.data) {
+                const foundUser: User = result.data;
+                setUser(foundUser);
+                await logAction({
+                    userId: foundUser.id,
+                    userName: foundUser.name,
+                    action: 'USER_LOGIN',
+                    details: `User ${foundUser.name} logged in.`,
+                    targetId: foundUser.id,
+                });
+                return foundUser;
+            } else {
+                 // Throw the specific error message from the backend if it exists
+                 throw new Error(result.message || 'User not found or invalid response.');
+            }
+        } catch (error) {
+            console.error("Login API call failed:", error);
+            // Re-throw the error to be caught by the LoginPage component
+            if (error instanceof Error) {
+                throw new Error(`Login failed: ${error.message}`);
+            }
+            throw new Error("An unknown error occurred during login.");
+        }
     };
 
     const logout = async () => {
