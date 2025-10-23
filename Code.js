@@ -5,28 +5,37 @@
 //  1. Paste this entire script into your Google Apps Script project.
 //  2. Replace "YOUR_SPREADSHEET_ID" with the actual ID of your Google Sheet.
 //  3. Deploy as a Web App with "Execute as: Me" and "Who has access: Anyone".
+//  4. IMPORTANT: You must create a NEW deployment version every time you update this script.
 // ============================================================================
 
 const SPREADSHEET_ID = "1OLCDE_fSLvgsuR51YgSIQ0zF16bRfmfi4ouQdJBegjk"; // <-- IMPORTANT: PASTE YOUR SPREADSHEET ID HERE
 
+// --- Centralized CORS Headers ---
+// These headers are essential for allowing the frontend web application to communicate with this script.
+// They are applied to both preflight (OPTIONS) and main (POST) requests.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type'
+};
+
 // --- CORS Preflight Handler ---
-// This function handles the browser's preflight OPTIONS request.
+// This function handles the browser's preflight OPTIONS request automatically.
 function doOptions(e) {
-  return ContentService.createTextOutput()
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const output = ContentService.createTextOutput(JSON.stringify({status: 'success'}))
+    .setMimeType(ContentService.MimeType.JSON);
+  
+  Object.keys(CORS_HEADERS).forEach(header => {
+    output.setHeader(header, CORS_HEADERS[header]);
+  });
+
+  return output;
 }
 
 // --- Main Entry Point ---
+// This function handles all POST requests from the web app.
 function doPost(e) {
   try {
-    // Add CORS header to all POST responses
-    const responseHeaders = {
-      'Access-Control-Allow-Origin': '*'
-    };
-
     const request = JSON.parse(e.postData.contents);
     const { action, payload } = request;
 
@@ -59,9 +68,9 @@ function doPost(e) {
       default:
         throw new Error(`Unknown action: ${action}`);
     }
-     return jsonResponse('success', responseData, '', responseHeaders);
+     return jsonResponse('success', responseData, '');
   } catch (error) {
-    return jsonResponse('error', null, error.message, {'Access-Control-Allow-Origin': '*'});
+    return jsonResponse('error', null, error.message);
   }
 }
 
@@ -260,19 +269,19 @@ function getHeaders(sheet) {
 }
 
 /**
- * Formats the API response into a standard JSON structure.
+ * Formats the API response into a standard JSON structure and applies CORS headers.
  * @param {string} status - 'success' or 'error'.
  * @param {*} data - The data payload.
  * @param {string} [message] - An optional error message.
- * @param {object} [headers] - Optional headers to add to the response.
  */
-function jsonResponse(status, data, message = '', headers = {}) {
+function jsonResponse(status, data, message = '') {
   const output = ContentService.createTextOutput(JSON.stringify({ status, data, message }))
     .setMimeType(ContentService.MimeType.JSON);
   
-  for (const header in headers) {
-    output.setHeader(header, headers[header]);
-  }
+  // Apply CORS headers to every response to ensure the browser allows it.
+  Object.keys(CORS_HEADERS).forEach(header => {
+    output.setHeader(header, CORS_HEADERS[header]);
+  });
   
   return output;
 }
