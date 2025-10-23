@@ -27,7 +27,11 @@ const BackendConfigurator: React.FC = () => {
             }
         } catch (error: any) {
             setTestStatus('error');
-            setTestMessage(`Failed: ${error.message}`);
+            let message = `Failed: ${error.message}`;
+            if (error.message.includes('Failed to fetch')) {
+                message += " This is often a CORS issue. Please ensure your Apps Script is deployed correctly with 'Who has access: Anyone' and that you have redeployed after making changes to the script.";
+            }
+            setTestMessage(message);
         }
     };
     
@@ -60,16 +64,17 @@ const BackendConfigurator: React.FC = () => {
                     className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 resize-none"
                     rows={3}
                 />
+                 <p className="text-xs text-slate-400 mt-1">Hint: The URL must be the deployed Web App URL, ending in `/exec`.</p>
             </div>
              {testStatus !== 'idle' && (
-                <div className={`flex items-center gap-2 text-xs p-2 rounded-md ${
+                <div className={`flex items-start gap-2 text-xs p-2 rounded-md ${
                     testStatus === 'success' ? 'bg-green-900/50 text-green-300' 
                     : testStatus === 'error' ? 'bg-red-900/50 text-red-300' 
                     : 'bg-sky-900/50 text-sky-300'
                 }`}>
-                    {testStatus === 'success' && <CheckCircle className="w-4 h-4" />}
-                    {testStatus === 'error' && <AlertTriangle className="w-4 h-4" />}
-                    {testStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {testStatus === 'success' && <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                    {testStatus === 'error' && <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                    {testStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin mt-0.5 flex-shrink-0" />}
                     <span>{testMessage}</span>
                 </div>
             )}
@@ -93,7 +98,6 @@ const LoginPage: React.FC = () => {
     const { login } = useAuth();
     const { triggerAnimation, isBackendConnected, backendError } = useApp();
     const navigate = useNavigate();
-    const [showConfig, setShowConfig] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -168,16 +172,6 @@ const LoginPage: React.FC = () => {
 
                     <div className="text-sm text-center min-h-[40px] flex flex-col justify-center">
                         {error && <p className="text-red-400">{error}</p>}
-                        {!isBackendConnected && !isLoading && (
-                            <div className="text-amber-400">
-                                <p>Backend is not connected.</p>
-                                <button type="button" onClick={() => setShowConfig(!showConfig)} className="font-semibold underline hover:text-amber-300">
-                                    {showConfig ? 'Hide Configuration' : 'Configure Backend URL'}
-                                </button>
-                            </div>
-                        )}
-                        {/* Show backendError from initial load if it exists */}
-                        {backendError && isBackendConnected === false && <p className="text-red-400 text-xs">{backendError}</p>}
                     </div>
 
                     <Button
@@ -189,7 +183,8 @@ const LoginPage: React.FC = () => {
                     </Button>
                 </form>
 
-                {showConfig && <BackendConfigurator />}
+                {(!isBackendConnected || backendError) && <BackendConfigurator />}
+
 
                  <div className="text-center text-xs text-slate-400 pt-2">
                     <p>Hint: Try one of the following logins.</p>
