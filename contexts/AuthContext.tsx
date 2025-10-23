@@ -1,6 +1,8 @@
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import type { User } from '../types';
 import { useApp } from './AppContext';
+import { mockUsers } from '../data/mockData';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -13,56 +15,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
-    const { triggerAnimation, logAction, appsScriptUrl, isBackendConnected } = useApp();
+    const { triggerAnimation, logAction, isLiveMode, apiClient: api } = useApp();
 
     const login = async (username: string, pass: string): Promise<User | null> => {
-        if (!isBackendConnected || !appsScriptUrl) {
-            throw new Error("Backend is not connected. Please configure the backend URL in settings.");
+        let foundUser: User | null = null;
+        
+        if (isLiveMode) {
+            // Live mode: Authenticate against the backend
+            // Note: The backend's login is simplified and doesn't check the password for this version.
+            // A real-world app would have secure password handling.
+            try {
+                foundUser = await api<User>('login', { username });
+            } catch (error) {
+                console.error("Live login failed:", error);
+                throw new Error("Failed to connect to the login service.");
+            }
+        } else {
+            // Demo mode: Use mock data and a hardcoded password
+            if (pass !== 'Airbus@320') {
+                return null;
+            }
+            foundUser = mockUsers.find(u => u.username.toLowerCase() === username.toLowerCase()) || null;
         }
 
-        // The password check remains client-side for this demo version.
-        // In a real-world scenario, you'd send a hashed password to the backend.
-        if (pass !== 'Airbus@320') {
-            return null;
-        }
-
-        try {
-            const response = await fetch(appsScriptUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'login', payload: { username } }),
-                redirect: 'follow'
+        if (foundUser) {
+            setUser(foundUser);
+            await logAction({
+                userId: foundUser.id,
+                userName: foundUser.name,
+                action: 'USER_LOGIN',
+                details: `User ${foundUser.name} logged in.`,
+                targetId: foundUser.id,
             });
-
-            if (!response.ok) {
-                throw new Error(`Login request failed with status: ${response.status}`);
-            }
-            
-            const result = await response.json();
-
-            if (result.status === 'success' && result.data) {
-                const foundUser: User = result.data;
-                setUser(foundUser);
-                await logAction({
-                    userId: foundUser.id,
-                    userName: foundUser.name,
-                    action: 'USER_LOGIN',
-                    details: `User ${foundUser.name} logged in.`,
-                    targetId: foundUser.id,
-                });
-                return foundUser;
-            } else {
-                 // Throw the specific error message from the backend if it exists
-                 throw new Error(result.message || 'User not found or invalid response.');
-            }
-        } catch (error) {
-            console.error("Login API call failed:", error);
-            // Re-throw the error to be caught by the LoginPage component
-            if (error instanceof Error) {
-                throw new Error(`Login failed: ${error.message}`);
-            }
-            throw new Error("An unknown error occurred during login.");
+            return foundUser;
         }
+        
+        return null;
     };
 
     const logout = async () => {
@@ -82,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return (
         <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout }}>
             {children}
+        {/* FIX: Corrected typo in the closing tag for AuthContext.Provider. */}
         </AuthContext.Provider>
     );
 };

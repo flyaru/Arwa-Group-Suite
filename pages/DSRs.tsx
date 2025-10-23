@@ -30,7 +30,8 @@ const DSRsPage: React.FC = () => {
 
     const canCreateDsr = user && ['admin', 'manager', 'supervisor', 'agent'].includes(user.role);
 
-    const customerMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
+    // FIX: Explicitly typed the map to resolve type inference issues.
+    const customerMap = useMemo(() => new Map<string, string>(customers.map(c => [c.id, c.name])), [customers]);
 
     const filteredDsrs = useMemo(() => {
         let baseDsrs = dsrs;

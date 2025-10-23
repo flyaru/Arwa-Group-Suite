@@ -2,12 +2,14 @@
 import React from 'react';
 import Card from '../ui/Card';
 import { useApp } from '../../contexts/AppContext';
+import type { Airport } from '../../types';
 
 const ActiveRoutes: React.FC = () => {
     const { airports, activeRoutes } = useApp();
     
     // Create a map for quick airport lookup by code
-    const airportMap = new Map(airports.map(a => [a.code, a]));
+    // FIX: Explicitly typed the map to resolve type inference issues.
+    const airportMap = new Map<string, Airport>(airports.map(a => [a.code, a]));
 
     const getPathD = (fromX: number, fromY: number, toX: number, toY: number) => {
         const midX = (fromX + toX) / 2;

@@ -22,7 +22,8 @@ const InvoicesPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-    const customerMap = useMemo(() => new Map(customers.map(c => [c.id, c.name])), [customers]);
+    // FIX: Explicitly typed the map to resolve type inference issues.
+    const customerMap = useMemo(() => new Map<string, string>(customers.map(c => [c.id, c.name])), [customers]);
 
     const filteredInvoices = useMemo(() => {
         return invoices.filter(invoice => {

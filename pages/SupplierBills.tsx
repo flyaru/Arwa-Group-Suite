@@ -22,8 +22,9 @@ const SupplierBillsPage: React.FC = () => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-    const supplierMap = useMemo(() => new Map(suppliers.map(s => [s.id, s.name])), [suppliers]);
-    const dsrMap = useMemo(() => new Map(dsrs.map(d => [d.id, d])), [dsrs]);
+    // FIX: Explicitly typed the maps to resolve type inference issues.
+    const supplierMap = useMemo(() => new Map<string, string>(suppliers.map(s => [s.id, s.name])), [suppliers]);
+    const dsrMap = useMemo(() => new Map<string, DSR>(dsrs.map(d => [d.id, d])), [dsrs]);
 
     const filteredBills = useMemo(() => {
         return supplierBills.filter(bill => {

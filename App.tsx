@@ -25,6 +25,7 @@ import TravelersPage from './pages/Travelers';
 import ReconciliationPage from './pages/Reconciliation';
 import AuditLogPage from './pages/AuditLog';
 import UserTransitionAnimation from './components/common/UserTransitionAnimation';
+import { Loader2 } from 'lucide-react';
 
 // Helper function to find roles for a path
 // FIX: Changed return type from string[] to User['role'][] to match prop type in Authorization component.
@@ -50,9 +51,17 @@ const AppLayout: React.FC = () => (
 );
 
 const AppRoutes: React.FC = () => {
-    const { animationState } = useApp();
+    const { animationState, isLoading } = useApp();
     return (
         <>
+            {isLoading && (
+                 <div className="fixed inset-0 bg-[#0B2D48]/80 backdrop-blur-sm flex items-center justify-center z-[200]">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-12 h-12 text-white animate-spin" />
+                        <p className="text-white text-lg font-medium">Loading Live Data...</p>
+                    </div>
+                </div>
+            )}
             {animationState.show && (animationState.type === 'login' || animationState.type === 'logout') && (
                 <div className="fixed inset-0 z-[100] pointer-events-none">
                      <UserTransitionAnimation type={animationState.type} userName={animationState.userName || ''} />
