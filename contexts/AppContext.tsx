@@ -19,7 +19,6 @@ async function apiCall(url: string, action: string, payload?: any) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ action, payload }),
-        redirect: 'follow'
     });
 
     if (!response.ok) {
