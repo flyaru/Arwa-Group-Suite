@@ -9,7 +9,7 @@ type AnimationState = {
     userName?: string;
 };
 
-const DEFAULT_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxUFvM8wnSsif2DQfg0raordYGddoF-leXTb_6XhYlOxoG9tBfEnI-lMtObgZucZHBF6Q/exec';
+export const DEFAULT_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxUFvM8wnSsif2DQfg0raordYGddoF-leXTb_6XhYlOxoG9tBfEnI-lMtObgZucZHBF6Q/exec';
 
 // --- API Helper ---
 async function apiCall(url: string, action: string, payload?: any) {
@@ -130,13 +130,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     // Backend and Data State
     const [appsScriptUrl, _setAppsScriptUrl] = useState<string | null>(() => {
-        const storedUrl = localStorage.getItem('appsScriptUrl');
-        if (storedUrl) {
-            return storedUrl;
-        }
-        // If no URL is stored, use the default and store it.
-        localStorage.setItem('appsScriptUrl', DEFAULT_BACKEND_URL);
-        return DEFAULT_BACKEND_URL;
+        // Start with null if no URL is stored, forcing configuration on first launch.
+        return localStorage.getItem('appsScriptUrl');
     });
     const [isBackendConnected, setIsBackendConnected] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -186,6 +181,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const fetchAllInitialData = useCallback(async () => {
         if (!appsScriptUrl) {
             setIsInitialLoading(false);
+            setBackendError('Backend URL is not configured.');
             return;
         }
         setIsInitialLoading(true);

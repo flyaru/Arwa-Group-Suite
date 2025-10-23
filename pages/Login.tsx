@@ -1,9 +1,89 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useApp } from '../contexts/AppContext';
+import { useApp, DEFAULT_BACKEND_URL } from '../contexts/AppContext';
 import AnimatedBackground from '../components/common/AnimatedBackground';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+
+const BackendConfigurator: React.FC = () => {
+    const { setAppsScriptUrl, testBackendConnection } = useApp();
+    const [url, setUrl] = useState(DEFAULT_BACKEND_URL);
+    const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+    const [testMessage, setTestMessage] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleTest = async () => {
+        setTestStatus('testing');
+        setTestMessage('');
+        try {
+            const response = await testBackendConnection(url);
+            if (response.status === 'success') {
+                setTestStatus('success');
+                setTestMessage('Success! Connection is working.');
+            } else {
+                throw new Error(response.message || 'Unknown error');
+            }
+        } catch (error: any) {
+            setTestStatus('error');
+            setTestMessage(`Failed: ${error.message}`);
+        }
+    };
+    
+    const handleSave = async () => {
+        if (testStatus !== 'success') {
+             setTestMessage('Please test the connection successfully before saving.');
+             setTestStatus('error');
+             return;
+        }
+        setIsSaving(true);
+        const success = await setAppsScriptUrl(url);
+        // On success, the app reloads, so no need to handle that state.
+        if (!success) {
+            setTestStatus('error');
+            setTestMessage('Failed to save. The URL might be invalid.');
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4 pt-4 mt-4 border-t border-slate-700">
+            <h3 className="text-sm font-bold text-white text-center">Backend Configuration</h3>
+            <div>
+                <label htmlFor="appsScriptUrl" className="block text-xs font-medium text-slate-300 mb-1">Web App URL</label>
+                <textarea
+                    id="appsScriptUrl"
+                    value={url}
+                    onChange={(e) => { setUrl(e.target.value); setTestStatus('idle'); }}
+                    placeholder="https://script.google.com/macros/s/..."
+                    className="w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 resize-none"
+                    rows={3}
+                />
+            </div>
+             {testStatus !== 'idle' && (
+                <div className={`flex items-center gap-2 text-xs p-2 rounded-md ${
+                    testStatus === 'success' ? 'bg-green-900/50 text-green-300' 
+                    : testStatus === 'error' ? 'bg-red-900/50 text-red-300' 
+                    : 'bg-sky-900/50 text-sky-300'
+                }`}>
+                    {testStatus === 'success' && <CheckCircle className="w-4 h-4" />}
+                    {testStatus === 'error' && <AlertTriangle className="w-4 h-4" />}
+                    {testStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <span>{testMessage}</span>
+                </div>
+            )}
+            <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={handleTest} disabled={!url || testStatus === 'testing'} className="!py-2 !text-xs w-full">
+                    {testStatus === 'testing' ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Testing...</> : 'Test Connection'}
+                </Button>
+                <Button onClick={handleSave} disabled={!url || isSaving || testStatus !== 'success'} className="!py-2 !text-xs w-full">
+                     {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save & Connect'}
+                </Button>
+            </div>
+        </div>
+    );
+};
 
 const LoginPage: React.FC = () => {
     const [username, setUsername] = useState('');
@@ -11,13 +91,21 @@ const LoginPage: React.FC = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
-    const { triggerAnimation } = useApp();
+    const { triggerAnimation, isBackendConnected, backendError } = useApp();
     const navigate = useNavigate();
+    const [showConfig, setShowConfig] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+
+        if (!isBackendConnected) {
+            setError('Backend is not connected. Please configure the URL first.');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const user = await login(username, password);
             if (user) {
@@ -34,6 +122,8 @@ const LoginPage: React.FC = () => {
             setIsLoading(false);
         }
     };
+    
+    const isFormDisabled = isLoading || !isBackendConnected;
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center">
@@ -59,8 +149,9 @@ const LoginPage: React.FC = () => {
                             placeholder="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 disabled:opacity-50"
                             required
+                            disabled={isFormDisabled}
                         />
                     </div>
                     <div>
@@ -69,19 +160,37 @@ const LoginPage: React.FC = () => {
                             placeholder="Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 disabled:opacity-50"
                             required
+                            disabled={isFormDisabled}
                         />
                     </div>
-                    {error && <p className="text-sm text-red-400 text-center">{error}</p>}
-                    <button
+
+                    <div className="text-sm text-center min-h-[40px] flex flex-col justify-center">
+                        {error && <p className="text-red-400">{error}</p>}
+                        {!isBackendConnected && !isLoading && (
+                            <div className="text-amber-400">
+                                <p>Backend is not connected.</p>
+                                <button type="button" onClick={() => setShowConfig(!showConfig)} className="font-semibold underline hover:text-amber-300">
+                                    {showConfig ? 'Hide Configuration' : 'Configure Backend URL'}
+                                </button>
+                            </div>
+                        )}
+                        {/* Show backendError from initial load if it exists */}
+                        {backendError && isBackendConnected === false && <p className="text-red-400 text-xs">{backendError}</p>}
+                    </div>
+
+                    <Button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-full py-3 bg-[#D10028] text-white font-bold rounded-lg hover:bg-red-700 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isFormDisabled}
+                        className="w-full"
                     >
                         {isLoading ? 'Signing In...' : 'Sign In'}
-                    </button>
+                    </Button>
                 </form>
+
+                {showConfig && <BackendConfigurator />}
+
                  <div className="text-center text-xs text-slate-400 pt-2">
                     <p>Hint: Try one of the following logins.</p>
                     <p>
