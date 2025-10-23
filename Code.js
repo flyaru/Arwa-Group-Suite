@@ -9,34 +9,59 @@
 
 const SPREADSHEET_ID = "1OLCDE_fSLvgsuR51YgSIQ0zF16bRfmfi4ouQdJBegjk"; // <-- IMPORTANT: PASTE YOUR SPREADSHEET ID HERE
 
+// --- CORS Preflight Handler ---
+// This function handles the browser's preflight OPTIONS request.
+function doOptions(e) {
+  return ContentService.createTextOutput()
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
 // --- Main Entry Point ---
 function doPost(e) {
   try {
+    // Add CORS header to all POST responses
+    const responseHeaders = {
+      'Access-Control-Allow-Origin': '*'
+    };
+
     const request = JSON.parse(e.postData.contents);
     const { action, payload } = request;
 
+    let responseData;
     switch (action) {
       case 'testConnection':
-        return jsonResponse('success', { status: 'success', message: 'Connection successful!' });
+        responseData = { status: 'success', message: 'Connection successful!' };
+        break;
       case 'login':
-        return jsonResponse('success', login(payload));
+        responseData = login(payload);
+        break;
       case 'fetchAllData':
-        return jsonResponse('success', fetchAllData());
+        responseData = fetchAllData();
+        break;
       case 'getAll':
-        return jsonResponse('success', getAll(payload.entity));
+        responseData = getAll(payload.entity);
+        break;
       case 'add':
-        return jsonResponse('success', add(payload.entity, payload.data));
+        responseData = add(payload.entity, payload.data);
+        break;
       case 'update':
-        return jsonResponse('success', update(payload.entity, payload.id, payload.data));
+        responseData = update(payload.entity, payload.id, payload.data);
+        break;
       case 'bulkDelete':
-        return jsonResponse('success', bulkDelete(payload.entity, payload.ids));
+        responseData = bulkDelete(payload.entity, payload.ids);
+        break;
       case 'bulkUpdate':
-        return jsonResponse('success', bulkUpdate(payload.entity, payload.updates));
+        responseData = bulkUpdate(payload.entity, payload.updates);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
+     return jsonResponse('success', responseData, '', responseHeaders);
   } catch (error) {
-    return jsonResponse('error', null, error.message);
+    return jsonResponse('error', null, error.message, {'Access-Control-Allow-Origin': '*'});
   }
 }
 
@@ -98,7 +123,7 @@ function login(payload) {
 function add(entityName, data) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(entityName);
   const headers = getHeaders(sheet);
-  const newRow = headers.map(header => data[header] !== undefined ? data[header] : null);
+  const newRow = headers.map(header => data[header] !== undefined ? JSON.stringify(data[header]) : null);
   sheet.appendRow(newRow);
   return data; // Return the object that was added
 }
@@ -113,19 +138,20 @@ function add(entityName, data) {
 function update(entityName, id, data) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(entityName);
   const headers = getHeaders(sheet);
-  const rowIndex = findRowIndexById(sheet, id);
+  const range = sheet.getDataRange();
+  const values = range.getValues();
+  const idColumnIndex = headers.indexOf('id');
+  
+  const rowIndex = values.findIndex(row => row[idColumnIndex] == id);
   if (rowIndex === -1) throw new Error(`Record with ID ${id} not found in ${entityName}.`);
   
-  const range = sheet.getRange(rowIndex + 1, 1, 1, headers.length);
-  const values = range.getValues()[0];
-  const currentData = headers.reduce((obj, header, index) => ({ ...obj, [header]: values[index] }), {});
-
+  const currentData = headers.reduce((obj, header, index) => ({ ...obj, [header]: values[rowIndex][index] }), {});
   const updatedData = { ...currentData, ...data };
 
-  const newRowValues = headers.map(header => updatedData[header]);
-  range.setValues([newRowValues]);
+  const newRowValues = headers.map(header => updatedData.hasOwnProperty(header) ? JSON.stringify(updatedData[header]) : currentData[header]);
+  sheet.getRange(rowIndex + 1, 1, 1, headers.length).setValues([newRowValues]);
   
-  return updatedData;
+  return sheetToJSONRow(updatedData, headers);
 }
 
 
@@ -136,20 +162,20 @@ function update(entityName, id, data) {
  */
 function bulkDelete(entityName, ids) {
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(entityName);
-    const idColumnIndex = getHeaders(sheet).indexOf('id') + 1;
-    if (idColumnIndex === 0) throw new Error(`Sheet ${entityName} must have an 'id' column.`);
+    const idColumnIndex = getHeaders(sheet).indexOf('id');
+    if (idColumnIndex === -1) throw new Error(`Sheet ${entityName} must have an 'id' column.`);
 
     const data = sheet.getDataRange().getValues();
     const rowsToDelete = [];
     
-    // Iterate backwards to avoid index shifting issues during deletion
-    for (let i = data.length - 1; i >= 1; i--) {
-        if (ids.includes(String(data[i][idColumnIndex - 1]))) {
+    for (let i = 1; i < data.length; i++) { // Start from 1 to skip header
+        if (ids.includes(String(data[i][idColumnIndex]))) {
             rowsToDelete.push(i + 1);
         }
     }
     
-    rowsToDelete.forEach(rowIndex => sheet.deleteRow(rowIndex));
+    // Iterate backwards to avoid index shifting issues during deletion
+    rowsToDelete.reverse().forEach(rowIndex => sheet.deleteRow(rowIndex));
 
     return { status: 'success', deletedCount: rowsToDelete.length };
 }
@@ -164,30 +190,50 @@ function bulkUpdate(entityName, updates) {
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(entityName);
     const headers = getHeaders(sheet);
     const idColumnIndex = headers.indexOf('id');
-    const data = sheet.getDataRange().getValues();
+    const dataRange = sheet.getDataRange();
+    const allValues = dataRange.getValues();
     
-    const dataMap = data.slice(1).map((row, index) => ({
-        rowIndex: index + 2, // 1-based index
-        id: row[idColumnIndex]
-    }));
+    const updateMap = new Map(updates.map(u => [u.id, u.data]));
 
-    updates.forEach(updateItem => {
-        const target = dataMap.find(item => item.id === updateItem.id);
-        if (target) {
-            const range = sheet.getRange(target.rowIndex, 1, 1, headers.length);
-            const currentValues = range.getValues()[0];
-            const updatedValues = headers.map((header, index) => {
-                return updateItem.data.hasOwnProperty(header) ? updateItem.data[header] : currentValues[index];
-            });
-            range.setValues([updatedValues]);
-        }
+    const newValues = allValues.map((row, index) => {
+      if (index === 0) return row; // Keep header
+      const rowId = row[idColumnIndex];
+      if (updateMap.has(rowId)) {
+        const updateData = updateMap.get(rowId);
+        return headers.map(header => updateData.hasOwnProperty(header) ? JSON.stringify(updateData[header]) : row[headers.indexOf(header)]);
+      }
+      return row;
     });
+
+    dataRange.setValues(newValues);
 
     return { status: 'success', updatedCount: updates.length };
 }
 
 
 // --- Helper Functions ---
+
+/**
+ * Converts a row object back into a type-consistent object after being read from the sheet.
+ */
+function sheetToJSONRow(rowObject, headers) {
+    const obj = {};
+    headers.forEach(header => {
+        const value = rowObject[header];
+        // Attempt to parse any string that looks like JSON, but fall back to the original string.
+        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+            try {
+                obj[header] = JSON.parse(value);
+            } catch (e) {
+                obj[header] = value;
+            }
+        } else {
+            obj[header] = value;
+        }
+    });
+    return obj;
+}
+
 
 /**
  * Converts sheet data into an array of JSON objects.
@@ -198,20 +244,10 @@ function sheetToJSON(sheet) {
   if (data.length < 2) return []; // No data rows
   const headers = data[0].map(h => String(h).trim());
   return data.slice(1).map(row => {
-    const obj = {};
-    headers.forEach((header, index) => {
-      // Handle JSON strings in cells (like 'items' in Invoices)
-      if (header === 'items' && typeof row[index] === 'string') {
-        try {
-          obj[header] = JSON.parse(row[index]);
-        } catch (e) {
-          obj[header] = row[index]; // Fallback to string if parse fails
-        }
-      } else {
-        obj[header] = row[index];
-      }
-    });
-    return obj;
+    return sheetToJSONRow(
+      row.reduce((obj, cell, index) => ({ ...obj, [headers[index]]: cell }), {}),
+      headers
+    );
   });
 }
 
@@ -220,25 +256,7 @@ function sheetToJSON(sheet) {
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The sheet to process.
  */
 function getHeaders(sheet) {
-  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-}
-
-
-/**
- * Finds the row index (1-based) of a record by its ID.
- * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The sheet to search in.
- * @param {string} id - The ID to find.
- */
-function findRowIndexById(sheet, id) {
-    const idColumnIndex = getHeaders(sheet).indexOf('id') + 1;
-    if (idColumnIndex === 0) return -1; // No 'id' column
-    const ids = sheet.getRange(2, idColumnIndex, sheet.getLastRow() - 1, 1).getValues();
-    for (let i = 0; i < ids.length; i++) {
-        if (String(ids[i][0]) === String(id)) {
-            return i + 2; // +2 because it's 1-based and we skipped the header
-        }
-    }
-    return -1;
+  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
 }
 
 /**
@@ -246,8 +264,15 @@ function findRowIndexById(sheet, id) {
  * @param {string} status - 'success' or 'error'.
  * @param {*} data - The data payload.
  * @param {string} [message] - An optional error message.
+ * @param {object} [headers] - Optional headers to add to the response.
  */
-function jsonResponse(status, data, message = '') {
-  return ContentService.createTextOutput(JSON.stringify({ status, data, message }))
+function jsonResponse(status, data, message = '', headers = {}) {
+  const output = ContentService.createTextOutput(JSON.stringify({ status, data, message }))
     .setMimeType(ContentService.MimeType.JSON);
+  
+  for (const header in headers) {
+    output.setHeader(header, headers[header]);
+  }
+  
+  return output;
 }
