@@ -3,12 +3,16 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { Bell, LogOut, User as UserIcon, Clock } from 'lucide-react';
+import { Bell, LogOut, User as UserIcon, Clock, Menu } from 'lucide-react';
 import { NAV_LINKS } from '../../constants';
 import { motion } from 'framer-motion';
 import Button from '../ui/Button';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+    onMenuClick: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     const { user, logout } = useAuth();
     const { currentUserAttendanceStatus, clockIn, clockOut } = useApp();
     const location = useLocation();
@@ -57,42 +61,52 @@ const Header: React.FC = () => {
     };
 
     return (
-        <header className="h-20 flex-shrink-0 flex items-center justify-between px-6 lg:px-8 bg-transparent">
-            <motion.div
-                key={pageTitle} // This key is crucial to trigger re-animation on navigation
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                <motion.h1 variants={itemVariants} className="text-2xl font-bold text-white">
-                    {pageTitle}
-                </motion.h1>
-                <motion.p variants={itemVariants} className="text-sm text-slate-400">
-                    {pageSubtitle}
-                </motion.p>
-            </motion.div>
+        <header className="h-20 flex-shrink-0 flex items-center justify-between px-4 md:px-6 lg:px-8 bg-transparent border-b border-white/10">
             <div className="flex items-center gap-4">
+                 <button 
+                    onClick={onMenuClick}
+                    className="lg:hidden text-slate-300 hover:text-white transition-colors"
+                    aria-label="Open menu"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+                <motion.div
+                    key={pageTitle} 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="hidden sm:block"
+                >
+                    <motion.h1 variants={itemVariants} className="text-2xl font-bold text-white">
+                        {pageTitle}
+                    </motion.h1>
+                    <motion.p variants={itemVariants} className="text-sm text-slate-400 hidden md:block">
+                        {pageSubtitle}
+                    </motion.p>
+                </motion.div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
                 <Button 
                     variant={currentUserAttendanceStatus === 'out' ? 'secondary' : 'primary'}
                     onClick={handleClockToggle}
                     className={`!py-2 !px-3 text-xs ${currentUserAttendanceStatus === 'in' ? '!bg-green-700 hover:!bg-green-600' : ''}`}
                     >
-                    <Clock className="w-4 h-4 mr-2" />
-                    {currentUserAttendanceStatus === 'out' ? 'Clock In' : 'Clock Out'}
+                    <Clock className="w-4 h-4 mr-0 sm:mr-2" />
+                    <span className="hidden sm:inline">{currentUserAttendanceStatus === 'out' ? 'Clock In' : 'Clock Out'}</span>
                 </Button>
 
-                <button className="text-slate-300 hover:text-white transition-colors">
-                    <Bell className="w-6 h-6" />
+                <button className="text-slate-300 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10">
+                    <Bell className="w-5 h-5" />
                 </button>
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
                         <UserIcon className="w-6 h-6 text-slate-300" />
                     </div>
-                    <div className="text-right">
+                    <div className="text-right hidden md:block">
                         <p className="font-semibold text-white">{user?.name || 'Admin User'}</p>
                         <p className="text-xs text-slate-400 capitalize">{user?.role || 'Admin'} • {user?.branch || 'Riyadh'}</p>
                     </div>
-                    <button onClick={logout} className="ml-2 text-slate-400 hover:text-[#D10028] transition-colors">
+                    <button onClick={logout} className="ml-2 text-slate-400 hover:text-[#D10028] transition-colors hidden sm:block">
                         <LogOut className="w-5 h-5" />
                     </button>
                 </div>

@@ -285,9 +285,9 @@ const DSRsPage: React.FC = () => {
         <div className="space-y-6">
             <Card>
                 <div className="p-4 sm:p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <h2 className="text-lg font-bold text-white">All DSRs</h2>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4">
                             <ExportButton data={dsrExportData} columns={dsrExportColumns} filename="dsr_report" />
                             {canCreateDsr && (
                                 <Button onClick={() => setIsFormModalOpen(true)}>
@@ -299,7 +299,7 @@ const DSRsPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="p-4 sm:px-6 border-t border-slate-800 flex flex-col md:flex-row items-center gap-4">
+                <div className="p-4 sm:px-6 border-t border-slate-800 flex flex-col md:flex-row items-center gap-4 flex-wrap">
                     {selectedIds.size > 0 ? (
                         <div className="flex items-center gap-4 w-full">
                             <span className="text-sm font-medium text-white">{selectedIds.size} selected</span>
@@ -314,7 +314,7 @@ const DSRsPage: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                             <div className="relative w-full md:flex-grow">
+                             <div className="relative w-full flex-grow">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     type="text"
@@ -324,11 +324,11 @@ const DSRsPage: React.FC = () => {
                                     className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
                                 />
                             </div>
-                            <div className="flex w-full md:w-auto gap-4">
+                            <div className="flex w-full sm:w-auto gap-4">
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full md:w-40 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                                    className="w-full sm:w-40 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
                                 >
                                     <option value="all">All Statuses</option>
                                     <option value="draft">Draft</option>
@@ -339,7 +339,7 @@ const DSRsPage: React.FC = () => {
                                 <select
                                     value={serviceTypeFilter}
                                     onChange={(e) => setServiceTypeFilter(e.target.value)}
-                                    className="w-full md:w-40 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                                    className="w-full sm:w-40 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
                                 >
                                     <option value="all">All Services</option>
                                     <option value="flight">Flight</option>

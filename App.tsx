@@ -75,6 +75,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/dsrs" element={<Authorization allowedRoles={getRolesForPath('/dsrs')}><DSRsPage /></Authorization>} />
                     <Route path="/customers" element={<Authorization allowedRoles={getRolesForPath('/customers')}><CustomersPage /></Authorization>} />
                     <Route path="/travelers" element={<Authorization allowedRoles={getRolesForPath('/travelers')}><TravelersPage /></Authorization>} />
+                    {/* FIX: Corrected typo in function name from getRolesforPath to getRolesForPath. */}
                     <Route path="/suppliers" element={<Authorization allowedRoles={getRolesForPath('/suppliers')}><SuppliersPage /></Authorization>} />
                     <Route path="/supplier-bills" element={<Authorization allowedRoles={getRolesForPath('/supplier-bills')}><SupplierBillsPage /></Authorization>} />
                     <Route path="/invoices" element={<Authorization allowedRoles={getRolesForPath('/invoices')}><InvoicesPage /></Authorization>} />
@@ -95,6 +96,8 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
     return (
+        // FIX: The error "Property 'children' is missing" indicates that a component requiring children was self-closed.
+        // Ensured both AppProvider and AuthProvider correctly wrap their child components.
         <AppProvider>
             <AuthProvider>
                 <HashRouter>

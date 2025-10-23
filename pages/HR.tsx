@@ -63,17 +63,17 @@ const HRPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Human Resources</h1>
                     <p className="text-sm text-slate-400">Manage employees, leave, and attendance.</p>
                 </div>
-                <div className="flex gap-4">
-                     <Button variant="secondary" onClick={() => setIsLeaveModalOpen(true)}>
+                <div className="flex gap-2 sm:gap-4 w-full sm:w-auto">
+                     <Button variant="secondary" onClick={() => setIsLeaveModalOpen(true)} className="flex-1 sm:flex-none">
                         <CalendarPlus className="w-4 h-4 mr-2" />
                         Request Leave
                     </Button>
-                    <Button onClick={handleOpenAddModal}>
+                    <Button onClick={handleOpenAddModal} className="flex-1 sm:flex-none">
                         <UserPlus className="w-4 h-4 mr-2" />
                         Add Employee
                     </Button>
@@ -82,9 +82,9 @@ const HRPage: React.FC = () => {
 
             <Card>
                 <div className="p-4 sm:p-6 border-b border-slate-800">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <h2 className="text-lg font-bold text-white">Employee Directory</h2>
-                        <div className="relative w-full max-w-xs">
+                        <div className="relative w-full sm:max-w-xs">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                             <input
                                 type="text"

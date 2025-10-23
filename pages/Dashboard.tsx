@@ -8,7 +8,7 @@ import ActiveRoutes from '../components/dashboard/ActiveRoutes';
 const Dashboard: React.FC = () => {
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 <StatCard 
                     title="Total Revenue"
                     value="SAR 67,000.00"

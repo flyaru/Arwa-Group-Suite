@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from '../common/AnimatedBackground';
@@ -29,14 +29,24 @@ const pageTransition = {
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div className="h-screen w-full flex bg-[#0B2D48]">
+        <div className="h-screen w-full flex bg-[#0B2D48] relative">
             <AnimatedBackground />
-            <Sidebar />
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+            {/* Overlay for mobile */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                ></div>
+            )}
+
             <div className="flex-1 flex flex-col overflow-hidden">
-                <Header />
-                <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+                <Header onMenuClick={() => setIsSidebarOpen(true)} />
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}
