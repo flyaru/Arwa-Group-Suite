@@ -203,3 +203,8 @@ export interface Task {
   createdBy: string; // userId
   createdAt: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}

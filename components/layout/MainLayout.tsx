@@ -1,10 +1,12 @@
 
+
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from '../common/AnimatedBackground';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import Chatbot from '../common/Chatbot';
 
 const pageVariants = {
     initial: {
@@ -61,6 +63,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </AnimatePresence>
                 </main>
             </div>
+            <Chatbot />
         </div>
     );
 };
