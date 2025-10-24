@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -16,7 +15,7 @@ import ExportButton from '../components/common/ExportButton';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const DSRsPage: React.FC = () => {
-    const { dsrs, addDsr, updateDsr, addInvoice, invoices, updateInvoice, addSupplierBill, customers, suppliers, addCustomer, bulkDeleteDsrs, logAction, globalDetailView, setGlobalDetailView } = useApp();
+    const { dsrs, addDsr, updateDsr, addInvoice, invoices, updateInvoice, addSupplierBill, customers, suppliers, addCustomer, bulkDeleteDsrs, logAction, globalDetailView, setGlobalDetailView, employees } = useApp();
     const { user } = useAuth();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -25,10 +24,15 @@ const DSRsPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
+    const [agentFilter, setAgentFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const canCreateDsr = user && ['admin', 'manager', 'supervisor', 'agent'].includes(user.role);
+
+    const agents = useMemo(() => 
+        employees.filter(e => ['agent', 'supervisor', 'manager', 'admin'].includes(e.role))
+    , [employees]);
 
     const handleViewDsr = (dsr: DSR) => {
         setSelectedDsr(dsr);
@@ -61,15 +65,16 @@ const DSRsPage: React.FC = () => {
 
             const matchesStatus = statusFilter === 'all' || dsr.status === statusFilter;
             const matchesServiceType = serviceTypeFilter === 'all' || dsr.serviceType === serviceTypeFilter;
+            const matchesAgent = agentFilter === 'all' || dsr.agentUsername === agentFilter;
             const matchesSearch = searchTerm === '' ||
                 customerName.includes(lowerSearchTerm) ||
                 dsr.pnr.toLowerCase().includes(lowerSearchTerm) ||
                 dsr.ticketNo.toLowerCase().includes(lowerSearchTerm) ||
                 dsr.route.toLowerCase().includes(lowerSearchTerm);
 
-            return matchesStatus && matchesServiceType && matchesSearch;
+            return matchesStatus && matchesServiceType && matchesAgent && matchesSearch;
         });
-    }, [dsrs, user, searchTerm, statusFilter, serviceTypeFilter, customerMap]);
+    }, [dsrs, user, searchTerm, statusFilter, serviceTypeFilter, agentFilter, customerMap]);
 
 
     // Data for export needs to be flattened
@@ -342,7 +347,19 @@ const DSRsPage: React.FC = () => {
                                     className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
                                 />
                             </div>
-                            <div className="flex w-full sm:w-auto gap-4">
+                            <div className="flex w-full sm:w-auto gap-4 flex-wrap">
+                                {user?.role !== 'agent' && (
+                                    <select
+                                        value={agentFilter}
+                                        onChange={(e) => setAgentFilter(e.target.value)}
+                                        className="w-full sm:w-40 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                                    >
+                                        <option value="all">All Agents</option>
+                                        {agents.map(agent => (
+                                            <option key={agent.id} value={agent.username}>{agent.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}

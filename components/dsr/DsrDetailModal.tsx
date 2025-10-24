@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -55,6 +54,13 @@ const DsrDetailModal: React.FC<DsrDetailModalProps> = ({ isOpen, onClose, dsr, c
                     <DetailRow label="Ticket No" value={dsr.ticketNo || 'N/A'} />
                     <DetailRow label="Route / Description" value={dsr.route} />
                 </div>
+
+                {dsr.remarks && (
+                     <div className="pt-4 border-t border-slate-700">
+                        <h3 className="font-bold text-white mb-2">Remarks</h3>
+                        <p className="text-sm text-slate-300 bg-slate-800/50 p-3 rounded-md whitespace-pre-wrap">{dsr.remarks}</p>
+                    </div>
+                )}
                 
                 <div className="pt-4 border-t border-slate-700">
                     <h3 className="font-bold text-white mb-2">Financials</h3>
@@ -69,13 +75,6 @@ const DsrDetailModal: React.FC<DsrDetailModalProps> = ({ isOpen, onClose, dsr, c
                     </div>
                 </div>
                 
-                {dsr.remarks && (
-                     <div className="pt-4 border-t border-slate-700">
-                        <h3 className="font-bold text-white mb-2">Remarks</h3>
-                        <p className="text-sm text-slate-300 bg-slate-800/50 p-3 rounded-md">{dsr.remarks}</p>
-                    </div>
-                )}
-
                 {(dsr.status === 'posted' || isLockedForAgent) && (
                     <div className="pt-4 border-t border-slate-700">
                         <div className={`flex items-center gap-3 bg-slate-800/50 p-3 rounded-md ${dsr.status === 'posted' ? 'text-amber-400' : 'text-sky-400'}`}>

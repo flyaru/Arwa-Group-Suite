@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
@@ -32,6 +31,7 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
     const [pnr, setPnr] = useState('');
     const [ticketNo, setTicketNo] = useState('');
     const [route, setRoute] = useState('');
+    const [remarks, setRemarks] = useState('');
     const [baseFare, setBaseFare] = useState(0);
     const [taxes, setTaxes] = useState(0);
     const [discount, setDiscount] = useState(0);
@@ -61,6 +61,7 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
         setPnr('');
         setTicketNo('');
         setRoute('');
+        setRemarks('');
         setBaseFare(0);
         setTaxes(0);
         setDiscount(0);
@@ -84,6 +85,7 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
                     pnr,
                     ticketNo,
                     route,
+                    remarks: remarks || undefined,
                     paymentMethod,
                     baseFare,
                     taxes,
@@ -152,6 +154,17 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
                         <Input label="Ticket Number" id="ticketNo" value={ticketNo} onChange={e => setTicketNo(e.target.value)} />
                     </div>
                     <Input label="Route / Description" id="route" value={route} onChange={e => setRoute(e.target.value)} required className="mt-4" />
+                    <div className="mt-4">
+                        <label htmlFor="remarks" className="block text-sm font-medium text-slate-300 mb-1">Remarks (Optional)</label>
+                        <textarea
+                            id="remarks"
+                            value={remarks}
+                            onChange={(e) => setRemarks(e.target.value)}
+                            rows={3}
+                            className="w-full px-4 py-2.5 bg-slate-800/50 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 border-slate-600 focus:ring-[#D10028]/80 resize-vertical"
+                            placeholder="Add any additional notes for this DSR..."
+                        />
+                    </div>
                 </div>
                 
 
