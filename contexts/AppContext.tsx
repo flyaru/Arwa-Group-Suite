@@ -1,3 +1,4 @@
+// /contexts/AppContext.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry, InvoiceItem, DSRStatus, Task } from '../types';
 import {
@@ -15,6 +16,9 @@ type AnimationState = {
 };
 type GlobalDetailView = { type: 'dsr' | 'invoice', id: string } | null;
 
+// >>> DEFAULT BACKEND URL <<<
+const DEFAULT_BACKEND_URL =
+  "https://script.google.com/macros/s/AKfycbw2u_ytJk9NlkOKlY-5nNTnfIsrNodfPq9X-DKIGDdxoNtw68OXd-c86NpAgZ5TnOERRw/exec";
 
 interface AppContextType {
     isLiveMode: boolean;
@@ -97,11 +101,11 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// FIX: Rewrote generic arrow function to avoid JSX parsing ambiguity in .tsx files.
+// Fixed: generic arrow function explicit form to avoid TSX parse ambiguity
 const apiClient: <T>(url: string, action: string, payload?: any) => Promise<T> = async (url, action, payload) => {
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Required for Apps Script
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Apps Script-friendly
         body: JSON.stringify({ action, payload }),
         redirect: 'follow',
     });
@@ -122,9 +126,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [language, setLanguage] = useState<Language>('en');
     const [direction, setDirection] = useState<Direction>('ltr');
     const [animationState, setAnimationState] = useState<AnimationState>({ show: false, type: null, userName: '' });
-    const [isLiveMode, setIsLiveMode] = useState(!!localStorage.getItem('backendUrl_arwa'));
-    const [backendUrl, setBackendUrl] = useState<string | null>(localStorage.getItem('backendUrl_arwa'));
-    const [isLoading, setIsLoading] = useState(isLiveMode);
+
+    // Use saved URL or fall back to DEFAULT_BACKEND_URL
+    const savedUrl = localStorage.getItem('backendUrl_arwa') ?? DEFAULT_BACKEND_URL;
+    const [isLiveMode, setIsLiveMode] = useState<boolean>(!!savedUrl);
+    const [backendUrl, setBackendUrl] = useState<string | null>(savedUrl);
+    const [isLoading, setIsLoading] = useState<boolean>(!!savedUrl);
+
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [globalDetailView, setGlobalDetailView] = useState<GlobalDetailView>(null);
     
@@ -145,7 +153,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(mockAuditLog);
     const [tasks, setTasks] = useState<Task[]>(mockTasks);
 
-    // FIX: Rewrote generic arrow function to avoid JSX parsing ambiguity in .tsx files.
+    // Persist URL if user switches it at runtime
+    useEffect(() => {
+        if (backendUrl) localStorage.setItem('backendUrl_arwa', backendUrl);
+    }, [backendUrl]);
+
     const api: <T>(action: string, payload?: any) => Promise<T> = (action, payload) => {
         if (!backendUrl) throw new Error("Backend URL not set.");
         return apiClient(backendUrl, action, payload);
@@ -183,7 +195,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, [language, direction]);
     
     useEffect(() => {
-        if(isLiveMode) {
+        if (isLiveMode && backendUrl) {
             fetchAllData();
         }
     }, [isLiveMode, backendUrl]);
@@ -195,7 +207,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('backendUrl_arwa', url);
             setBackendUrl(url);
             setIsLiveMode(true);
-            // Reload the entire app to ensure clean state
             window.location.reload();
             return true;
         } catch (error) {
@@ -241,42 +252,42 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
     
     const addDsr = async (dsr: DSR) => { 
-        if(isLiveMode) await api('add', { entity: 'DSRs', data: dsr });
+        if (isLiveMode) await api('add', { entity: 'DSRs', data: dsr });
         setDsrs(prev => [dsr, ...prev]);
     };
     const updateDsr = async (updatedDsr: DSR) => {
-        if(isLiveMode) await api('update', { entity: 'DSRs', id: updatedDsr.id, data: updatedDsr });
+        if (isLiveMode) await api('update', { entity: 'DSRs', id: updatedDsr.id, data: updatedDsr });
         setDsrs(prev => prev.map(d => d.id === updatedDsr.id ? updatedDsr : d));
     };
     const bulkDeleteDsrs = async (dsrIds: string[]) => {
-        if(isLiveMode) await api('bulkDelete', { entity: 'DSRs', ids: dsrIds });
+        if (isLiveMode) await api('bulkDelete', { entity: 'DSRs', ids: dsrIds });
         setDsrs(prev => prev.filter(d => !dsrIds.includes(d.id)));
     };
 
     const addInvoice = async (invoice: Invoice) => {
-        if(isLiveMode) await api('add', { entity: 'Invoices', data: invoice });
+        if (isLiveMode) await api('add', { entity: 'Invoices', data: invoice });
         setInvoices(prev => [invoice, ...prev]);
     };
     const updateInvoice = async (updatedInvoice: Invoice) => {
-        if(isLiveMode) await api('update', { entity: 'Invoices', id: updatedInvoice.id, data: updatedInvoice });
+        if (isLiveMode) await api('update', { entity: 'Invoices', id: updatedInvoice.id, data: updatedInvoice });
         setInvoices(prev => prev.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
     };
     const bulkDeleteInvoices = async (invoiceIds: string[]) => {
-        if(isLiveMode) await api('bulkDelete', { entity: 'Invoices', ids: invoiceIds });
+        if (isLiveMode) await api('bulkDelete', { entity: 'Invoices', ids: invoiceIds });
         setInvoices(prev => prev.filter(i => !invoiceIds.includes(i.id)));
     };
 
     const addSupplierBill = async (bill: Omit<SupplierBill, 'id'>) => {
         const newBill: SupplierBill = { id: `BILL-${Date.now()}`, ...bill };
-        if(isLiveMode) await api('add', { entity: 'SupplierBills', data: newBill });
+        if (isLiveMode) await api('add', { entity: 'SupplierBills', data: newBill });
         setSupplierBills(prev => [newBill, ...prev]);
     };
     const updateSupplierBillStatus = async (billId: string, status: SupplierBill['status']) => {
-        if(isLiveMode) await api('update', { entity: 'SupplierBills', id: billId, data: { status } });
+        if (isLiveMode) await api('update', { entity: 'SupplierBills', id: billId, data: { status } });
         setSupplierBills(prev => prev.map(b => b.id === billId ? { ...b, status } : b));
     };
     const bulkDeleteSupplierBills = async (billIds: string[]) => {
-        if(isLiveMode) await api('bulkDelete', { entity: 'SupplierBills', ids: billIds });
+        if (isLiveMode) await api('bulkDelete', { entity: 'SupplierBills', ids: billIds });
         setSupplierBills(prev => prev.filter(b => !billIds.includes(b.id)));
     };
     
@@ -284,7 +295,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const updates = invoiceIds.map(id => ({ id, data: { status: 'paid' as 'paid' } }));
         if (isLiveMode) await api('bulkUpdate', { entity: 'Invoices', updates });
         
-        // Local state update logic
         const affectedInvoices = invoices.filter(i => invoiceIds.includes(i.id) && i.status !== 'paid');
         if (affectedInvoices.length === 0) return;
 
@@ -300,7 +310,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const customer = customers.find(c => c.id === id);
             return { id, data: { totalSpend: (customer?.totalSpend || 0) + amount } };
         });
-        if(isLiveMode) await api('bulkUpdate', { entity: 'Customers', updates: customerUpdates });
+        if (isLiveMode) await api('bulkUpdate', { entity: 'Customers', updates: customerUpdates });
 
         setCustomers(prev => prev.map(cust => {
             if (customerSpendUpdates.has(cust.id)) {
@@ -312,7 +322,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const bulkMarkSupplierBillsAsPaid = async (billIds: string[]) => {
         const updates = billIds.map(id => ({ id, data: { status: 'paid' as 'paid' } }));
-        if(isLiveMode) await api('bulkUpdate', { entity: 'SupplierBills', updates });
+        if (isLiveMode) await api('bulkUpdate', { entity: 'SupplierBills', updates });
         setSupplierBills(prev => prev.map(item => billIds.includes(item.id) ? { ...item, status: 'paid' } : item));
     };
 
@@ -322,9 +332,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             await updateInvoice({ ...invoiceToUpdate, status: 'paid' });
 
             const customer = customers.find(c => c.id === invoiceToUpdate.customerId);
-            if(customer) {
+            if (customer) {
                 const updatedCustomer = { ...customer, totalSpend: customer.totalSpend + invoiceToUpdate.total };
-                 if(isLiveMode) await api('update', { entity: 'Customers', id: customer.id, data: { totalSpend: updatedCustomer.totalSpend } });
+                if (isLiveMode) await api('update', { entity: 'Customers', id: customer.id, data: { totalSpend: updatedCustomer.totalSpend } });
                 setCustomers(prev => prev.map(c => c.id === customer.id ? updatedCustomer : c));
             }
         }
@@ -344,50 +354,50 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const addCustomer = async (customerData: Omit<Customer, 'id' | 'totalSpend'>): Promise<Customer> => {
         const newCustomer: Customer = { id: `CUST-${Date.now()}`, totalSpend: 0, ...customerData };
-        if(isLiveMode) await api('add', { entity: 'Customers', data: newCustomer });
+        if (isLiveMode) await api('add', { entity: 'Customers', data: newCustomer });
         setCustomers(prev => [newCustomer, ...prev]);
         return newCustomer;
     };
     const bulkDeleteCustomers = async (customerIds: string[]) => {
-        if(isLiveMode) await api('bulkDelete', { entity: 'Customers', ids: customerIds });
+        if (isLiveMode) await api('bulkDelete', { entity: 'Customers', ids: customerIds });
         setCustomers(prev => prev.filter(c => !customerIds.includes(c.id)));
     };
     
     const addSupplier = async (supplier: Omit<Supplier, 'id'>) => {
         const newSupplier: Supplier = { id: `SUP-${Date.now()}`, ...supplier };
-        if(isLiveMode) await api('add', { entity: 'Suppliers', data: newSupplier });
+        if (isLiveMode) await api('add', { entity: 'Suppliers', data: newSupplier });
         setSuppliers(prev => [newSupplier, ...prev]);
     };
     
     const addTraveler = async (traveler: Omit<Traveler, 'id'>) => {
         const newTraveler: Traveler = { id: `TR-${Date.now()}`, ...traveler };
-        if(isLiveMode) await api('add', { entity: 'Travelers', data: newTraveler });
+        if (isLiveMode) await api('add', { entity: 'Travelers', data: newTraveler });
         setTravelers(prev => [newTraveler, ...prev]);
     };
     
     const addEmployee = async (employeeData: Omit<User, 'id'>) => {
         const newEmployee: User = { id: `EMP-${Date.now()}`, ...employeeData };
-        if(isLiveMode) await api('add', { entity: 'Users', data: newEmployee });
+        if (isLiveMode) await api('add', { entity: 'Users', data: newEmployee });
         setEmployees(prev => [newEmployee, ...prev]);
     };
     const updateEmployee = async (updatedEmployee: User) => {
-        if(isLiveMode) await api('update', { entity: 'Users', id: updatedEmployee.id, data: updatedEmployee });
+        if (isLiveMode) await api('update', { entity: 'Users', id: updatedEmployee.id, data: updatedEmployee });
         setEmployees(prev => prev.map(e => e.id === updatedEmployee.id ? updatedEmployee : e));
     };
 
     const requestLeave = async (request: Omit<LeaveRequest, 'id' | 'status'>) => {
         const newRequest: LeaveRequest = { id: `LR-${Date.now()}`, status: 'pending', ...request };
-        if(isLiveMode) await api('add', { entity: 'LeaveRequests', data: newRequest });
+        if (isLiveMode) await api('add', { entity: 'LeaveRequests', data: newRequest });
         setLeaveRequests(prev => [newRequest, ...prev]);
     };
     const updateLeaveStatus = async (requestId: string, status: LeaveRequest['status']) => {
-        if(isLiveMode) await api('update', { entity: 'LeaveRequests', id: requestId, data: { status } });
+        if (isLiveMode) await api('update', { entity: 'LeaveRequests', id: requestId, data: { status } });
         setLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, status } : r));
     };
 
     const clockIn = async (userId: string, userName: string) => {
         const newRecord: AttendanceRecord = { id: `ATT-${Date.now()}`, employeeId: userId, employeeName: userName, clockInTime: new Date().toISOString() };
-        if(isLiveMode) await api('add', { entity: 'AttendanceLog', data: newRecord });
+        if (isLiveMode) await api('add', { entity: 'AttendanceLog', data: newRecord });
         setAttendanceLog(prev => [newRecord, ...prev]);
         setCurrentUserAttendanceStatus('in');
     };
@@ -396,7 +406,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const lastRecord = attendanceLog.find(att => att.employeeId === userId && !att.clockOutTime);
         if (lastRecord) {
             const updatedRecord = { ...lastRecord, clockOutTime: new Date().toISOString() };
-            if(isLiveMode) await api('update', { entity: 'AttendanceLog', id: lastRecord.id, data: { clockOutTime: updatedRecord.clockOutTime } });
+            if (isLiveMode) await api('update', { entity: 'AttendanceLog', id: lastRecord.id, data: { clockOutTime: updatedRecord.clockOutTime } });
             setAttendanceLog(prev => prev.map(r => r.id === lastRecord.id ? updatedRecord : r));
         }
         setCurrentUserAttendanceStatus('out');
@@ -404,13 +414,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     const initiateHandover = async (handover: Omit<CashHandover, 'id' | 'status' | 'dateInitiated'>) => {
         const newHandover: CashHandover = { id: `CH-${Date.now()}`, status: 'pending', dateInitiated: new Date().toISOString(), ...handover };
-        if(isLiveMode) await api('add', { entity: 'CashHandovers', data: newHandover });
+        if (isLiveMode) await api('add', { entity: 'CashHandovers', data: newHandover });
         setCashHandovers(prev => [newHandover, ...prev]);
     };
     
     const confirmHandover = async (handoverId: string, managerId: string, managerName: string) => {
         const dataToUpdate = { status: 'confirmed' as 'confirmed', managerId, managerName, dateConfirmed: new Date().toISOString() };
-        if(isLiveMode) await api('update', { entity: 'CashHandovers', id: handoverId, data: dataToUpdate });
+        if (isLiveMode) await api('update', { entity: 'CashHandovers', id: handoverId, data: dataToUpdate });
         setCashHandovers(prev => prev.map(h => h.id === handoverId ? { ...h, ...dataToUpdate } : h));
     };
     
@@ -420,12 +430,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             createdAt: new Date().toISOString(),
             ...task
         };
-        if(isLiveMode) await api('add', { entity: 'Tasks', data: newTask });
+        if (isLiveMode) await api('add', { entity: 'Tasks', data: newTask });
         setTasks(prev => [newTask, ...prev]);
     };
 
     const updateTask = async (updatedTask: Task) => {
-        if(isLiveMode) await api('update', { entity: 'Tasks', id: updatedTask.id, data: updatedTask });
+        if (isLiveMode) await api('update', { entity: 'Tasks', id: updatedTask.id, data: updatedTask });
         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     };
 
