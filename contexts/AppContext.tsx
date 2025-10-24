@@ -17,9 +17,7 @@ type AnimationState = {
 type GlobalDetailView = { type: 'dsr' | 'invoice', id: string } | null;
 
 // >>> DEFAULT BACKEND URL <<<
-const DEFAULT_BACKEND_URL =
-  "https://script.google.com/macros/s/AKfycbw2u_ytJk9NlkOKlY-5nNTnfIsrNodfPq9X-DKIGDdxoNtw68OXd-c86NpAgZ5TnOERRw/exec";
-
+const DEFAULT_BACKEND_URL = "/api/gas";
 interface AppContextType {
     isLiveMode: boolean;
     backendUrl: string | null;
