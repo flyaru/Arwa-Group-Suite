@@ -109,7 +109,10 @@ interface AppContextType {
     setIsSearchModalOpen: Dispatch<SetStateAction<boolean>>;
     globalDetailView: GlobalDetailView;
     setGlobalDetailView: (view: GlobalDetailView) => void;
-    // FIX: Added missing properties to the context type to resolve errors in BackendConfiguration.tsx.
+
+    geminiApiKey: string;
+    setGeminiApiKey: (key: string) => void;
+
     setBackendAndSwitchToLive: (url: string, key: string) => Promise<boolean>;
     switchToDemoMode: () => void;
 }
@@ -125,6 +128,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
     const [isLiveMode, setIsLiveMode] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [geminiApiKey, _setGeminiApiKey] = useState('');
 
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [globalDetailView, setGlobalDetailView] = useState<GlobalDetailView>(null);
@@ -145,6 +149,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [currentUserAttendanceStatus, setCurrentUserAttendanceStatus] = useState<'in' | 'out'>('out');
     const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(mockAuditLog);
     const [tasks, setTasks] = useState<Task[]>(mockTasks);
+
+    const setGeminiApiKey = (key: string) => {
+        _setGeminiApiKey(key);
+        try {
+            localStorage.setItem('geminiApiKey_arwa', key);
+        } catch (e) {
+            console.warn('localStorage is not available. Gemini API key will not be persisted.');
+        }
+    };
 
     const fetchAllData = async (client: SupabaseClient) => {
         setIsLoading(true);
@@ -219,8 +232,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const switchToDemoMode = () => {
         setIsLiveMode(false);
         setSupabase(null);
-        localStorage.removeItem('supabaseUrl_arwa');
-        localStorage.removeItem('supabaseAnonKey_arwa');
+        try {
+            localStorage.removeItem('supabaseUrl_arwa');
+            localStorage.removeItem('supabaseAnonKey_arwa');
+        } catch (e) {
+            console.warn('localStorage is not available.');
+        }
         setIsLoading(true);
         // Simulate loading mock data to show loading screen
         setTimeout(() => {
@@ -239,9 +256,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             await fetchAllData(testClient); // This will throw on failure, preventing inconsistent state
 
             // Success, now commit to live mode state
-            localStorage.setItem('supabaseUrl_arwa', url);
-            localStorage.setItem('supabaseAnonKey_arwa', key);
-
+            try {
+                localStorage.setItem('supabaseUrl_arwa', url);
+                localStorage.setItem('supabaseAnonKey_arwa', key);
+            } catch (e) {
+                console.warn('localStorage is not available. Connection will not be persisted.');
+            }
+            
             setSupabase(testClient);
             setIsLiveMode(true);
             return true;
@@ -259,8 +280,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, [language, direction]);
 
     useEffect(() => {
-        // Hardcoded to always start in live mode using credentials from App.tsx.
-        setBackendAndSwitchToLive(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let savedUrl = null;
+        let savedKey = null;
+        let savedGeminiKey = null;
+
+        try {
+            savedUrl = localStorage.getItem('supabaseUrl_arwa');
+            savedKey = localStorage.getItem('supabaseAnonKey_arwa');
+            savedGeminiKey = localStorage.getItem('geminiApiKey_arwa');
+        } catch (e) {
+            console.warn('localStorage is not available. Proceeding without saved credentials.');
+        }
+        
+        if (savedGeminiKey) {
+            _setGeminiApiKey(savedGeminiKey);
+        }
+
+        if (savedUrl && savedKey) {
+            // Try to connect with saved credentials from a previous manual switch
+            setBackendAndSwitchToLive(savedUrl, savedKey);
+        } else {
+            // If no saved credentials (first launch), try with the hardcoded ones
+            setBackendAndSwitchToLive(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
     }, []);
     
     const toggleLanguage = () => {
@@ -450,6 +492,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setIsSearchModalOpen,
             globalDetailView,
             setGlobalDetailView,
+            geminiApiKey,
+            setGeminiApiKey,
             setBackendAndSwitchToLive,
             switchToDemoMode,
         }}>

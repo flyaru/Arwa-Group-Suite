@@ -6,16 +6,28 @@ import { useApp } from '../../contexts/AppContext';
 import { CheckCircle, AlertTriangle, XCircle, ExternalLink } from 'lucide-react';
 
 const BackendConfiguration: React.FC = () => {
-    const { isLiveMode, setBackendAndSwitchToLive, switchToDemoMode, isLoading } = useApp();
+    const { 
+        isLiveMode, 
+        setBackendAndSwitchToLive, 
+        switchToDemoMode, 
+        isLoading,
+        geminiApiKey,
+        setGeminiApiKey
+    } = useApp();
+
     const [urlInput, setUrlInput] = useState('');
     const [anonKeyInput, setAnonKeyInput] = useState('');
+    const [geminiKeyInput, setGeminiKeyInput] = useState('');
+
     const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
     const [testMessage, setTestMessage] = useState('');
+    const [geminiSaveStatus, setGeminiSaveStatus] = useState<'idle' | 'saved'>('idle');
 
     useEffect(() => {
         setUrlInput(localStorage.getItem('supabaseUrl_arwa') || '');
         setAnonKeyInput(localStorage.getItem('supabaseAnonKey_arwa') || '');
-    }, [isLiveMode]);
+        setGeminiKeyInput(geminiApiKey || '');
+    }, [isLiveMode, geminiApiKey]);
 
     const handleTestConnection = async () => {
         if (!urlInput || !anonKeyInput) {
@@ -45,7 +57,12 @@ const BackendConfiguration: React.FC = () => {
             setTestStatus('error');
             setTestMessage('Failed to save. Please test the connection first.');
         }
-        // On success, the app will reload via the context function
+    };
+
+    const handleSaveGeminiKey = () => {
+        setGeminiApiKey(geminiKeyInput);
+        setGeminiSaveStatus('saved');
+        setTimeout(() => setGeminiSaveStatus('idle'), 2000);
     };
 
     return (
@@ -74,7 +91,8 @@ const BackendConfiguration: React.FC = () => {
                 </div>
             )}
             
-            <div className="mt-4 space-y-3">
+            <div className="mt-6 space-y-4">
+                 <h3 className="text-lg font-semibold text-white">Supabase Settings</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="supabaseUrl" className="block text-sm font-medium text-slate-300 mb-1">
@@ -123,6 +141,36 @@ const BackendConfiguration: React.FC = () => {
                             {isLoading ? 'Switching...' : 'Save & Switch to Live Mode'}
                         </Button>
                      </div>
+                 </div>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-slate-700 space-y-3">
+                <h3 className="text-lg font-semibold text-white">AI Assistant Settings</h3>
+                 <div>
+                    <label htmlFor="geminiKey" className="block text-sm font-medium text-slate-300 mb-1">
+                        Gemini API Key
+                    </label>
+                    <input
+                        id="geminiKey"
+                        type="password"
+                        value={geminiKeyInput}
+                        onChange={(e) => setGeminiKeyInput(e.target.value)}
+                        placeholder="Enter your Google AI Studio API key"
+                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                    />
+                </div>
+                 <div className="flex items-center justify-between gap-4 pt-2">
+                    <div className="flex items-center gap-3 min-h-[44px]">
+                        {geminiSaveStatus === 'saved' && (
+                            <div className="flex items-center gap-2 text-sm text-green-400">
+                                <CheckCircle className="w-5 h-5" />
+                                Key saved successfully!
+                            </div>
+                        )}
+                    </div>
+                    <Button variant="secondary" onClick={handleSaveGeminiKey}>
+                        Save Gemini Key
+                    </Button>
                  </div>
             </div>
         </Card>

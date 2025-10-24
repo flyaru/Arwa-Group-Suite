@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useApp } from '../../contexts/AppContext';
 import type { ChatMessage } from '../../types';
 
 const Chatbot: React.FC = () => {
@@ -10,6 +11,7 @@ const Chatbot: React.FC = () => {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { user } = useAuth();
+    const { geminiApiKey } = useApp();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const aiRef = useRef<any>(null); // To store the AI client instance
 
@@ -35,11 +37,17 @@ const Chatbot: React.FC = () => {
         setInputValue('');
         setIsLoading(true);
 
+        if (!geminiApiKey) {
+            setMessages([...newMessages, { role: 'model', text: "Sorry, the AI Assistant is not configured. Please add a Gemini API key in the Settings menu." }]);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             if (!aiRef.current) {
                 // Dynamically import and initialize on first use
                 const { GoogleGenAI } = await import('@google/genai');
-                aiRef.current = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+                aiRef.current = new GoogleGenAI({ apiKey: geminiApiKey });
             }
             const ai = aiRef.current;
             
