@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import InvoiceTable from '../components/invoice/InvoiceTable';
 import InvoiceDetailModal from '../components/invoice/InvoiceDetailModal';
@@ -13,7 +13,7 @@ import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const InvoicesPage: React.FC = () => {
     // FIX: Added markInvoiceAsPaid to the destructuring from useApp.
-    const { invoices, dsrs, handleInvoiceViewedAndLockDsr, markInvoiceAsPaid, customers, bulkMarkInvoicesAsPaid, bulkDeleteInvoices, logAction } = useApp();
+    const { invoices, dsrs, handleInvoiceViewedAndLockDsr, markInvoiceAsPaid, customers, bulkMarkInvoicesAsPaid, bulkDeleteInvoices, logAction, globalDetailView, setGlobalDetailView } = useApp();
     const { user } = useAuth();
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -21,6 +21,25 @@ const InvoicesPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+    const handleViewInvoice = (invoice: Invoice) => {
+        if (!invoice.firstViewedAt) {
+            handleInvoiceViewedAndLockDsr(invoice.id);
+        }
+        setSelectedInvoice(invoice);
+        setIsDetailModalOpen(true);
+    };
+
+    useEffect(() => {
+        if (globalDetailView && globalDetailView.type === 'invoice') {
+            const invoiceToView = invoices.find(i => i.id === globalDetailView.id);
+            if (invoiceToView) {
+                handleViewInvoice(invoiceToView);
+            }
+            setGlobalDetailView(null);
+        }
+    }, [globalDetailView, invoices, setGlobalDetailView]);
+
 
     // FIX: Explicitly typed the map to resolve type inference issues.
     const customerMap = useMemo(() => new Map<string, string>(customers.map(c => [c.id, c.name])), [customers]);
@@ -98,14 +117,6 @@ const InvoicesPage: React.FC = () => {
         bulkDeleteInvoices(Array.from(selectedIds));
         setSelectedIds(new Set());
         setIsConfirmModalOpen(false);
-    };
-
-    const handleViewInvoice = (invoice: Invoice) => {
-        if (!invoice.firstViewedAt) {
-            handleInvoiceViewedAndLockDsr(invoice.id);
-        }
-        setSelectedInvoice(invoice);
-        setIsDetailModalOpen(true);
     };
 
     const selectedCustomer = customers.find(c => c.id === selectedInvoice?.customerId);

@@ -1,5 +1,6 @@
 
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
@@ -26,6 +27,8 @@ import ReconciliationPage from './pages/Reconciliation';
 import AuditLogPage from './pages/AuditLog';
 import UserTransitionAnimation from './components/common/UserTransitionAnimation';
 import { Loader2 } from 'lucide-react';
+import GlobalSearchModal from './components/common/GlobalSearchModal';
+import TasksPage from './pages/Tasks';
 
 // Helper function to find roles for a path
 // FIX: Changed return type from string[] to User['role'][] to match prop type in Authorization component.
@@ -51,9 +54,25 @@ const AppLayout: React.FC = () => (
 );
 
 const AppRoutes: React.FC = () => {
-    const { animationState, isLoading } = useApp();
+    const { animationState, isLoading, setIsSearchModalOpen } = useApp();
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+                event.preventDefault();
+                setIsSearchModalOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [setIsSearchModalOpen]);
+
+
     return (
         <>
+            <GlobalSearchModal />
             {isLoading && (
                  <div className="fixed inset-0 bg-[#0B2D48]/80 backdrop-blur-sm flex items-center justify-center z-[200]">
                     <div className="flex flex-col items-center gap-4">
@@ -82,6 +101,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/reconciliation" element={<Authorization allowedRoles={getRolesForPath('/reconciliation')}><ReconciliationPage /></Authorization>} />
                     <Route path="/cash" element={<Authorization allowedRoles={getRolesForPath('/cash')}><CashPage /></Authorization>} />
                     <Route path="/hr" element={<Authorization allowedRoles={getRolesForPath('/hr')}><HRPage /></Authorization>} />
+                    <Route path="/tasks" element={<Authorization allowedRoles={getRolesForPath('/tasks')}><TasksPage /></Authorization>} />
                     <Route path="/campaigns" element={<Authorization allowedRoles={getRolesForPath('/campaigns')}><CampaignsPage /></Authorization>} />
                     <Route path="/reports" element={<Authorization allowedRoles={getRolesForPath('/reports')}><ReportsPage /></Authorization>} />
                     <Route path="/settings" element={<Authorization allowedRoles={getRolesForPath('/settings')}><SettingsPage /></Authorization>} />
@@ -96,8 +116,9 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        // FIX: The error "Property 'children' is missing" indicates that a component requiring children was self-closed.
-        // Ensured both AppProvider and AuthProvider correctly wrap their child components.
+        // FIX: Correctly wrapped child components with AppProvider and AuthProvider to resolve the
+        // "Property 'children' is missing" error. These context providers must contain the components
+        // that consume their context.
         <AppProvider>
             <AuthProvider>
                 <HashRouter>

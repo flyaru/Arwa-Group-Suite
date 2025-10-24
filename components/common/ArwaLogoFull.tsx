@@ -12,7 +12,27 @@ const ArwaLogoFull: React.FC = () => (
 
         {/* Logo */}
         <div className="flex-shrink-0 mx-4 text-center">
-            <img src="https://i.imgur.com/W85d6C4.png" alt="Arwa Logo" className="h-16 mx-auto" />
+            <svg
+              className="h-16 w-auto mx-auto"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 2L2 22H22L12 2Z"
+                fill="#D10028"
+              />
+              <path
+                d="M12 9L7 22H17L12 9Z"
+                fill="#0B2D48"
+                fillOpacity="0.5"
+              />
+              <path
+                d="M12 12.5L10.5 14.5L11 12L9.5 11L11.5 10.8L12 9L12.5 10.8L14.5 11L13 12L13.5 14.5L12 12.5Z"
+                fill="white"
+              />
+            </svg>
+            <p className="text-xs mt-1 font-bold">ARWA GROUP</p>
         </div>
 
         {/* Arabic Details */}

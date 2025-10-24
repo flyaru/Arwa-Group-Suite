@@ -1,4 +1,5 @@
-import type { User, Customer, Supplier, Traveler, DSR, Invoice, SupplierBill, LeaveRequest, CashHandover, AttendanceRecord, AuditLogEntry, Airport, Route } from '../types';
+
+import type { User, Customer, Supplier, Traveler, DSR, Invoice, SupplierBill, LeaveRequest, CashHandover, AttendanceRecord, AuditLogEntry, Airport, Route, Task } from '../types';
 
 export const mockUsers: User[] = [
     { id: '1', username: 'admin', role: 'admin', branch: 'Riyadh', name: 'Admin User', email: 'admin@arwa.tech' },
@@ -77,4 +78,12 @@ export const mockActiveRoutes: Route[] = [
     { from: 'JED', to: 'CAI' },
     { from: 'DMM', to: 'DXB' },
     { from: 'RUH', to: 'LHR' },
+];
+
+export const mockTasks: Task[] = [
+    { id: 'TASK-1', title: 'Follow up with Saudi Aramco', description: 'Contact Mr. Ahmed regarding the new corporate travel package.', status: 'todo', priority: 'high', dueDate: '2024-08-05', assignedTo: '2', createdBy: '1', createdAt: '2024-07-28T10:00:00Z' },
+    { id: 'TASK-2', title: 'Prepare Q3 Sales Report', description: 'Compile all sales data for the third quarter and create a summary report.', status: 'in-progress', priority: 'medium', dueDate: '2024-08-15', assignedTo: '4', createdBy: '2', createdAt: '2024-07-25T14:30:00Z' },
+    { id: 'TASK-3', title: 'Finalize Jeddah branch marketing materials', description: 'Review and approve the final designs for the new marketing brochures.', status: 'todo', priority: 'medium', dueDate: '2024-08-10', assignedTo: '3', createdBy: '2', createdAt: '2024-07-29T09:00:00Z' },
+    { id: 'TASK-4', title: 'Audit end-of-month DSRs', description: 'Verify all DSRs submitted in the last week of July for accuracy.', status: 'done', priority: 'high', dueDate: '2024-08-01', assignedTo: '6', createdBy: '1', createdAt: '2024-07-26T11:00:00Z' },
+    { id: 'TASK-5', title: 'Onboard new hire', description: 'Complete the HR onboarding process for the new agent.', status: 'in-progress', priority: 'low', dueDate: '2024-08-08', assignedTo: '5', createdBy: '1', createdAt: '2024-07-30T16:00:00Z' },
 ];

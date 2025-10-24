@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,68 +38,61 @@ const LoginPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="min-h-screen w-full flex items-center justify-center p-4 relative">
             <AnimatedBackground />
             <Card className="w-full max-w-sm p-8 space-y-6">
                 <div className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-4">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#D10028" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M2 17L12 22L22 17" stroke="#0B2D48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M2 12L12 17L22 12" stroke="#0B2D48" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <h1 className="text-3xl font-bold text-white">Arwa Group</h1>
-                    <p className="text-slate-300 mt-1">Integrated Business Solution</p>
-                    <p className="text-xs text-slate-400 mt-1">(Developed by Arwa Tech)</p>
+                    <svg
+                      className="h-10 w-auto mx-auto mb-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M12 2L2 22H22L12 2Z"
+                        fill="#D10028"
+                      />
+                      <path
+                        d="M12 9L7 22H17L12 9Z"
+                        fill="#0B2D48"
+                        fillOpacity="0.5"
+                      />
+                      <path
+                        d="M12 12.5L10.5 14.5L11 12L9.5 11L11.5 10.8L12 9L12.5 10.8L14.5 11L13 12L13.5 14.5L12 12.5Z"
+                        fill="white"
+                      />
+                    </svg>
+                    <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
+                    <p className="text-slate-400">Sign in to your account</p>
+                    <p className="text-xs text-slate-500 mt-2">Arwa Group - Integrated Business Suite</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 disabled:opacity-50"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div>
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80 disabled:opacity-50"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-
-                    <div className="text-sm text-center min-h-[40px] flex flex-col justify-center">
-                        {error && <p className="text-red-400">{error}</p>}
-                    </div>
-
-                    <Button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full"
-                    >
+                    <input
+                        type="text"
+                        placeholder="Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                    />
+                     {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? 'Signing In...' : 'Sign In'}
                     </Button>
                 </form>
-
-                 <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-700 mt-4">
-                    <p>Hint: Try one of the following logins.</p>
-                    <p>
-                        <span className="font-semibold text-slate-300">User:</span> admin, manager, agent, accountant, hr
-                        <br />
-                        <span className="font-semibold text-slate-300">Pass:</span> Airbus@320
-                    </p>
-                </div>
             </Card>
+            <footer className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-500">
+                Developed by Arwa Tech - All rights reserved (C)2025
+            </footer>
         </div>
     );
 };

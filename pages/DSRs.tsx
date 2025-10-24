@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import DsrTable from '../components/dsr/DsrTable';
@@ -16,7 +16,7 @@ import ExportButton from '../components/common/ExportButton';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const DSRsPage: React.FC = () => {
-    const { dsrs, addDsr, updateDsr, addInvoice, invoices, updateInvoice, addSupplierBill, customers, suppliers, addCustomer, bulkDeleteDsrs, logAction } = useApp();
+    const { dsrs, addDsr, updateDsr, addInvoice, invoices, updateInvoice, addSupplierBill, customers, suppliers, addCustomer, bulkDeleteDsrs, logAction, globalDetailView, setGlobalDetailView } = useApp();
     const { user } = useAuth();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -29,6 +29,22 @@ const DSRsPage: React.FC = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const canCreateDsr = user && ['admin', 'manager', 'supervisor', 'agent'].includes(user.role);
+
+    const handleViewDsr = (dsr: DSR) => {
+        setSelectedDsr(dsr);
+        setIsDetailModalOpen(true);
+    };
+
+    useEffect(() => {
+        if (globalDetailView && globalDetailView.type === 'dsr') {
+            const dsrToView = dsrs.find(d => d.id === globalDetailView.id);
+            if (dsrToView) {
+                handleViewDsr(dsrToView);
+            }
+            setGlobalDetailView(null);
+        }
+    }, [globalDetailView, dsrs, setGlobalDetailView]);
+
 
     // FIX: Explicitly typed the map to resolve type inference issues.
     const customerMap = useMemo(() => new Map<string, string>(customers.map(c => [c.id, c.name])), [customers]);
@@ -147,11 +163,6 @@ const DSRsPage: React.FC = () => {
         });
     };
 
-
-    const handleViewDsr = (dsr: DSR) => {
-        setSelectedDsr(dsr);
-        setIsDetailModalOpen(true);
-    };
 
     const handleSubmitForApproval = async () => {
         if (!selectedDsr || selectedDsr.status !== 'draft' || !user) return;

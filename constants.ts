@@ -15,7 +15,8 @@ import {
     Shield,
     History,
     FileArchive,
-    Bot
+    Bot,
+    ListTodo
 } from 'lucide-react';
 import type { User } from './types';
 
@@ -35,6 +36,7 @@ export const NAV_LINKS: { name: string; path: string; icon: React.ElementType; r
     { name: 'AI Reconciliation', path: '/reconciliation', icon: Bot, roles: FINANCE_ROLES },
     { name: 'Cash', path: '/cash', icon: Wallet, roles: ['admin', 'manager', 'supervisor', 'accountant', 'agent'] },
     { name: 'HR', path: '/hr', icon: Briefcase, roles: ['admin', 'hr'] },
+    { name: 'Tasks', path: '/tasks', icon: ListTodo, roles: ALL_ROLES },
     { name: 'Campaigns', path: '/campaigns', icon: Megaphone, roles: ['admin', 'manager'] },
     { name: 'Reports', path: '/reports', icon: BarChart3, roles: MANAGER_ROLES },
     { name: 'Settings', path: '/settings', icon: Settings, roles: ALL_ROLES },

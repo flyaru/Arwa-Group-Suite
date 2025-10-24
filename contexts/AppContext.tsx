@@ -1,10 +1,9 @@
-
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry, InvoiceItem, DSRStatus } from '../types';
+import React, { createContext, useState, useContext, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
+import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry, InvoiceItem, DSRStatus, Task } from '../types';
 import {
     mockUsers, mockCustomers, mockSuppliers, mockTravelers, mockDsrs, mockInvoices,
     mockSupplierBills, mockLeaveRequests, mockCashHandovers, mockAttendanceLog, mockAuditLog,
-    mockAirports, mockActiveRoutes
+    mockAirports, mockActiveRoutes, mockTasks
 } from '../data/mockData';
 
 type Language = 'en' | 'ar';
@@ -14,6 +13,8 @@ type AnimationState = {
     type: 'login' | 'logout' | null;
     userName?: string;
 };
+type GlobalDetailView = { type: 'dsr' | 'invoice', id: string } | null;
+
 
 interface AppContextType {
     isLiveMode: boolean;
@@ -82,7 +83,16 @@ interface AppContextType {
     auditLog: AuditLogEntry[];
     logAction: (logData: Omit<AuditLogEntry, 'id' | 'timestamp'>) => Promise<void>;
 
+    tasks: Task[];
+    addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
+    updateTask: (updatedTask: Task) => Promise<void>;
+
     apiClient: <T>(action: string, payload?: any) => Promise<T>;
+    
+    isSearchModalOpen: boolean;
+    setIsSearchModalOpen: Dispatch<SetStateAction<boolean>>;
+    globalDetailView: GlobalDetailView;
+    setGlobalDetailView: (view: GlobalDetailView) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -115,6 +125,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [isLiveMode, setIsLiveMode] = useState(!!localStorage.getItem('backendUrl_arwa'));
     const [backendUrl, setBackendUrl] = useState<string | null>(localStorage.getItem('backendUrl_arwa'));
     const [isLoading, setIsLoading] = useState(isLiveMode);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const [globalDetailView, setGlobalDetailView] = useState<GlobalDetailView>(null);
     
     // Data State
     const [dsrs, setDsrs] = useState<DSR[]>(mockDsrs);
@@ -131,6 +143,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const [attendanceLog, setAttendanceLog] = useState<AttendanceRecord[]>(mockAttendanceLog);
     const [currentUserAttendanceStatus, setCurrentUserAttendanceStatus] = useState<'in' | 'out'>('out');
     const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(mockAuditLog);
+    const [tasks, setTasks] = useState<Task[]>(mockTasks);
 
     // FIX: Rewrote generic arrow function to avoid JSX parsing ambiguity in .tsx files.
     const api: <T>(action: string, payload?: any) => Promise<T> = (action, payload) => {
@@ -154,6 +167,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setCashHandovers(data.cashHandovers || []);
             setAttendanceLog(data.attendanceLog || []);
             setAuditLog(data.auditLog || []);
+            setTasks(data.tasks || []);
         } catch (error) {
             console.error("Failed to fetch all data:", error);
             alert("Failed to connect to the backend. Switching back to Demo Mode.");
@@ -399,6 +413,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if(isLiveMode) await api('update', { entity: 'CashHandovers', id: handoverId, data: dataToUpdate });
         setCashHandovers(prev => prev.map(h => h.id === handoverId ? { ...h, ...dataToUpdate } : h));
     };
+    
+    const addTask = async (task: Omit<Task, 'id' | 'createdAt'>) => {
+        const newTask: Task = {
+            id: `TASK-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+            ...task
+        };
+        if(isLiveMode) await api('add', { entity: 'Tasks', data: newTask });
+        setTasks(prev => [newTask, ...prev]);
+    };
+
+    const updateTask = async (updatedTask: Task) => {
+        if(isLiveMode) await api('update', { entity: 'Tasks', id: updatedTask.id, data: updatedTask });
+        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    };
 
     return (
         <AppContext.Provider value={{
@@ -452,7 +481,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             clockOut,
             auditLog,
             logAction,
+            tasks,
+            addTask,
+            updateTask,
             apiClient: api,
+            isSearchModalOpen,
+            setIsSearchModalOpen,
+            globalDetailView,
+            setGlobalDetailView,
         }}>
             {children}
         </AppContext.Provider>

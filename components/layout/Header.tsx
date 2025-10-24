@@ -3,7 +3,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { Bell, LogOut, User as UserIcon, Clock, Menu } from 'lucide-react';
+import { Bell, LogOut, User as UserIcon, Clock, Menu, Search } from 'lucide-react';
 import { NAV_LINKS } from '../../constants';
 import { motion } from 'framer-motion';
 import Button from '../ui/Button';
@@ -14,7 +14,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     const { user, logout } = useAuth();
-    const { currentUserAttendanceStatus, clockIn, clockOut } = useApp();
+    const { currentUserAttendanceStatus, clockIn, clockOut, setIsSearchModalOpen } = useApp();
     const location = useLocation();
 
     const currentLink = NAV_LINKS.find(link => location.pathname.startsWith(link.path));
@@ -86,6 +86,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 </motion.div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
+                 <button 
+                    onClick={() => setIsSearchModalOpen(true)}
+                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+                    aria-label="Open search"
+                >
+                    <Search className="w-5 h-5" />
+                    <span className="hidden lg:flex items-center gap-1 text-xs">
+                        Search
+                        <kbd className="px-1.5 py-0.5 text-xs font-sans font-semibold text-slate-400 bg-slate-900/80 border border-slate-700 rounded">
+                        ⌘K
+                        </kbd>
+                    </span>
+                </button>
+
                 <Button 
                     variant={currentUserAttendanceStatus === 'out' ? 'secondary' : 'primary'}
                     onClick={handleClockToggle}
