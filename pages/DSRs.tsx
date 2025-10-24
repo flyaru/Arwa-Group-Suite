@@ -187,9 +187,11 @@ const DSRsPage: React.FC = () => {
             lineTotal: dsrToSubmit.sellingFare
         }];
         
-        const subtotal = dsrToSubmit.sellingFare;
+        // FIX: Changed invoice total calculation to be VAT-inclusive based on user feedback.
+        // The total is now the selling fare, and the subtotal is derived from it.
+        const total = dsrToSubmit.sellingFare;
         const vat = dsrToSubmit.vatOnCommission;
-        const total = subtotal + vat;
+        const subtotal = total - vat;
 
         const sellerName = "ARWA TRAVEL & EVENTS";
         const vatNumber = "310263881300003";

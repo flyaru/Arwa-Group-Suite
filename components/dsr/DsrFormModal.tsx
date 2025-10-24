@@ -39,14 +39,18 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
     const [isSaving, setIsSaving] = useState(false);
 
 
-    const { sellingFare, commission, vatOnCommission } = useMemo(() => {
+    // FIX: Updated financial calculations based on user feedback. Commission is now Base Fare - Net Fare,
+    // and Net Commission is displayed. The total Selling Fare remains the same.
+    const { sellingFare, commission, vatOnCommission, netCommission } = useMemo(() => {
         const calculatedSellingFare = (baseFare || 0) + (taxes || 0) - (discount || 0);
-        const calculatedCommission = calculatedSellingFare - (netFare || 0);
+        const calculatedCommission = (baseFare || 0) - (netFare || 0);
         const calculatedVatOnCommission = calculatedCommission * 0.15;
+        const calculatedNetCommission = calculatedCommission - calculatedVatOnCommission;
         return {
             sellingFare: calculatedSellingFare,
             commission: calculatedCommission,
             vatOnCommission: calculatedVatOnCommission,
+            netCommission: calculatedNetCommission,
         };
     }, [baseFare, taxes, discount, netFare]);
 
@@ -177,15 +181,19 @@ const DsrFormModal: React.FC<DsrFormModalProps> = ({ isOpen, onClose, onSave, cu
                 
                 <div className="bg-slate-800/50 p-4 rounded-lg space-y-2">
                     <div className="flex justify-between items-center">
-                        <span className="text-slate-400 text-sm">Commission:</span>
+                        <span className="text-slate-400 text-sm">Commission (Base - Net):</span>
                         <span className="font-semibold text-white">SAR {commission.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between items-center">
                         <span className="text-slate-400 text-sm">VAT on Commission (15%):</span>
                         <span className="font-semibold text-white">SAR {vatOnCommission.toFixed(2)}</span>
                     </div>
+                    <div className="flex justify-between items-center text-green-400 border-t border-slate-700 pt-2 mt-2">
+                        <span className="text-sm font-semibold">Net Commission Earned:</span>
+                        <span className="font-semibold">SAR {netCommission.toFixed(2)}</span>
+                    </div>
                      <div className="flex justify-between items-center border-t border-slate-700 pt-2 mt-2">
-                        <span className="text-slate-300 font-bold">Selling Fare:</span>
+                        <span className="text-slate-300 font-bold">Selling Fare (Customer Price):</span>
                         <span className="font-bold text-xl text-white">SAR {sellingFare.toFixed(2)}</span>
                     </div>
                 </div>
