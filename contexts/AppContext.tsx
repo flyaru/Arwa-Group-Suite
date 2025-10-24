@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry, Task, SupplierBillStatus, LeaveRequestStatus, CashHandoverStatus } from '../types';
@@ -40,8 +39,6 @@ interface AppContextType {
     isLiveMode: boolean;
     supabase: SupabaseClient | null;
     isLoading: boolean;
-    setBackendAndSwitchToLive: (url: string, anonKey: string) => Promise<boolean>;
-    switchToDemoMode: () => void;
     
     language: Language;
     direction: Direction;
@@ -111,6 +108,9 @@ interface AppContextType {
     setIsSearchModalOpen: Dispatch<SetStateAction<boolean>>;
     globalDetailView: GlobalDetailView;
     setGlobalDetailView: (view: GlobalDetailView) => void;
+    // FIX: Added missing properties to the context type to resolve errors in BackendConfiguration.tsx.
+    setBackendAndSwitchToLive: (url: string, key: string) => Promise<boolean>;
+    switchToDemoMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -193,10 +193,58 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         } catch (error: any) {
             console.error("Failed to fetch all data:", error.message || error);
-            alert(`Failed to connect to the backend: ${error.message || 'Unknown error'}. Check your Supabase credentials and Row Level Security policies. Switching to Demo Mode.`);
-            switchToDemoMode();
+            alert(`Failed to connect to the backend: ${error.message || 'Unknown error'}. Check your Supabase credentials and Row Level Security policies.`);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const resetToMockData = () => {
+        setDsrs(mockDsrs);
+        setInvoices(mockInvoices);
+        setSupplierBills(mockSupplierBills);
+        setCustomers(mockCustomers);
+        setSuppliers(mockSuppliers);
+        setTravelers(mockTravelers);
+        setEmployees(mockUsers);
+        setLeaveRequests(mockLeaveRequests);
+        setCashHandovers(mockCashHandovers);
+        setAttendanceLog(mockAttendanceLog);
+        setAuditLog(mockAuditLog);
+        setTasks(mockTasks);
+    };
+
+    const switchToDemoMode = () => {
+        setIsLiveMode(false);
+        setSupabase(null);
+        localStorage.removeItem('supabaseUrl_arwa');
+        localStorage.removeItem('supabaseAnonKey_arwa');
+        setIsLoading(true);
+        // Simulate loading mock data to show loading screen
+        setTimeout(() => {
+            resetToMockData();
+            setIsLoading(false);
+        }, 500);
+    };
+
+    const setBackendAndSwitchToLive = async (url: string, key: string): Promise<boolean> => {
+        try {
+            const testClient = createClient(url, key);
+            // A quick check to see if the client can connect and has basic permissions.
+            const { error } = await testClient.from('customers').select('id', { count: 'exact', head: true });
+            if (error) throw error;
+
+            localStorage.setItem('supabaseUrl_arwa', url);
+            localStorage.setItem('supabaseAnonKey_arwa', key);
+
+            setSupabase(testClient);
+            setIsLiveMode(true);
+            await fetchAllData(testClient);
+            return true;
+        } catch (error: any) {
+            console.error("Failed to switch to live mode:", error.message);
+            switchToDemoMode();
+            return false;
         }
     };
     
@@ -206,44 +254,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, [language, direction]);
 
     useEffect(() => {
-        const url = localStorage.getItem('supabaseUrl_arwa');
-        const key = localStorage.getItem('supabaseAnonKey_arwa');
+        const savedUrl = localStorage.getItem('supabaseUrl_arwa');
+        const savedKey = localStorage.getItem('supabaseAnonKey_arwa');
 
-        if (url && key) {
-            const client = createClient(url, key);
-            setSupabase(client);
-            setIsLiveMode(true);
-            fetchAllData(client);
+        if (savedUrl && savedKey) {
+            setBackendAndSwitchToLive(savedUrl, savedKey);
         } else {
-            setIsLiveMode(false);
-            setIsLoading(false);
+            // Default to demo mode. No need to call switchToDemoMode as it's the initial state.
+            setIsLoading(false); // finish initial loading
         }
     }, []);
     
-    const setBackendAndSwitchToLive = async (url: string, anonKey: string) => {
-        setIsLoading(true);
-        try {
-            const testClient = createClient(url, anonKey);
-            const { error } = await testClient.from('customers').select('id', { count: 'exact', head: true });
-            if (error) throw error;
-
-            localStorage.setItem('supabaseUrl_arwa', url);
-            localStorage.setItem('supabaseAnonKey_arwa', anonKey);
-            window.location.reload();
-            return true;
-        } catch (error) {
-            console.error("Supabase connection test failed:", error);
-            setIsLoading(false);
-            return false;
-        }
-    };
-
-    const switchToDemoMode = () => {
-        localStorage.removeItem('supabaseUrl_arwa');
-        localStorage.removeItem('supabaseAnonKey_arwa');
-        window.location.reload();
-    };
-
     const toggleLanguage = () => {
         setLanguage(prev => {
             const newLang = prev === 'en' ? 'ar' : 'en';
@@ -407,8 +428,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             isLiveMode,
             supabase,
             isLoading,
-            setBackendAndSwitchToLive,
-            switchToDemoMode,
             language,
             direction,
             toggleLanguage,
@@ -433,6 +452,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             setIsSearchModalOpen,
             globalDetailView,
             setGlobalDetailView,
+            setBackendAndSwitchToLive,
+            switchToDemoMode,
         }}>
             {children}
         </AppContext.Provider>

@@ -1,7 +1,7 @@
-
 import React from 'react';
 import Card from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
+// FIX: Imported and added the BackendConfiguration component to the settings page.
 import BackendConfiguration from '../components/settings/BackendConfiguration';
 
 
@@ -10,8 +10,7 @@ const SettingsPage: React.FC = () => {
     
     return (
         <div className="space-y-6">
-           {user?.role === 'admin' && <BackendConfiguration />}
-            
+            <BackendConfiguration />
             <Card className="p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Application Settings</h2>
                 <p className="text-slate-400">
