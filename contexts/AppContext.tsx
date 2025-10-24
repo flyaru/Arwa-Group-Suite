@@ -6,6 +6,7 @@ import {
     mockSupplierBills, mockLeaveRequests, mockCashHandovers, mockAttendanceLog, mockAuditLog,
     mockAirports, mockActiveRoutes, mockTasks
 } from '../data/mockData';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../App';
 
 type Language = 'en' | 'ar';
 type Direction = 'ltr' | 'rtl';
@@ -193,7 +194,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
         } catch (error: any) {
             console.error("Failed to fetch all data:", error.message || error);
-            alert(`Failed to connect to the backend: ${error.message || 'Unknown error'}. Check your Supabase credentials and Row Level Security policies.`);
+            // Re-throw so the caller can handle it (e.g., switch to demo mode)
+            throw error;
         } finally {
             setIsLoading(false);
         }
@@ -234,16 +236,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const { error } = await testClient.from('customers').select('id', { count: 'exact', head: true });
             if (error) throw error;
 
+            await fetchAllData(testClient); // This will throw on failure, preventing inconsistent state
+
+            // Success, now commit to live mode state
             localStorage.setItem('supabaseUrl_arwa', url);
             localStorage.setItem('supabaseAnonKey_arwa', key);
 
             setSupabase(testClient);
             setIsLiveMode(true);
-            await fetchAllData(testClient);
             return true;
         } catch (error: any) {
             console.error("Failed to switch to live mode:", error.message);
-            switchToDemoMode();
+            alert(`Failed to connect to the backend: ${error.message || 'Unknown error'}. Check your Supabase credentials and Row Level Security policies. Reverting to Demo Mode.`);
+            switchToDemoMode(); // This will reset state and mock data
             return false;
         }
     };
@@ -254,15 +259,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }, [language, direction]);
 
     useEffect(() => {
-        const savedUrl = localStorage.getItem('supabaseUrl_arwa');
-        const savedKey = localStorage.getItem('supabaseAnonKey_arwa');
-
-        if (savedUrl && savedKey) {
-            setBackendAndSwitchToLive(savedUrl, savedKey);
-        } else {
-            // Default to demo mode. No need to call switchToDemoMode as it's the initial state.
-            setIsLoading(false); // finish initial loading
-        }
+        // Hardcoded to always start in live mode using credentials from App.tsx.
+        setBackendAndSwitchToLive(SUPABASE_URL, SUPABASE_ANON_KEY);
     }, []);
     
     const toggleLanguage = () => {

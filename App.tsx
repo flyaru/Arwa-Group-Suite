@@ -30,6 +30,12 @@ import { Loader2 } from 'lucide-react';
 import GlobalSearchModal from './components/common/GlobalSearchModal';
 import TasksPage from './pages/Tasks';
 
+// Hardcoded Supabase credentials. 
+// These credentials are used to connect to the production Supabase backend.
+// The app will attempt to connect on startup. If it fails, it will fall back to Demo Mode.
+export const SUPABASE_URL = 'https://ujdnlqdyadljdgqoaoaj.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqZG5scWR5YWRsamRncW9hb2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc2OTAsImV4cCI6MjA3NjgyMzY5MH0.O85K4V5TsbBmAUbPyUFQNXzz5ALy0hSJnHhGshyo2HQ';
+
 // Helper function to find roles for a path
 // FIX: Changed return type from string[] to User['role'][] to match prop type in Authorization component.
 const getRolesForPath = (path: string): User['role'][] => {
