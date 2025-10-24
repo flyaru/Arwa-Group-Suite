@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DSR, Invoice, SupplierBill, Airport, Route, Customer, LeaveRequest, CashHandover, Supplier, Traveler, User, AttendanceRecord, AuditLogEntry, Task, SupplierBillStatus, LeaveRequestStatus, CashHandoverStatus } from '../types';
@@ -190,9 +191,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             if (tasksRes.error) throw tasksRes.error;
             setTasks(tasksRes.data.map(t => fromSnakeCase(t)) as Task[]);
 
-        } catch (error) {
-            console.error("Failed to fetch all data:", error);
-            alert("Failed to connect to the backend. Check your Supabase credentials in Settings. Switching to Demo Mode.");
+        } catch (error: any) {
+            console.error("Failed to fetch all data:", error.message || error);
+            alert(`Failed to connect to the backend: ${error.message || 'Unknown error'}. Check your Supabase credentials and Row Level Security policies. Switching to Demo Mode.`);
             switchToDemoMode();
         } finally {
             setIsLoading(false);
