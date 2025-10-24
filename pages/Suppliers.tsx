@@ -49,7 +49,8 @@ const SuppliersPage: React.FC = () => {
     }, [filteredSuppliers, supplierBills]);
 
     const handleSaveSupplier = (newSupplierData: Omit<Supplier, 'id'>) => {
-        addSupplier(newSupplierData);
+        // FIX: Corrected an issue where `addSupplier` was called with an incomplete `Supplier` object by adding the mandatory `id` property before saving.
+        addSupplier({ ...newSupplierData, id: `SUP-${Date.now()}` });
         setIsFormModalOpen(false);
     };
 

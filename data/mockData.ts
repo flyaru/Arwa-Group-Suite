@@ -1,8 +1,7 @@
-
 import type { User, Customer, Supplier, Traveler, DSR, Invoice, SupplierBill, LeaveRequest, CashHandover, AttendanceRecord, AuditLogEntry, Airport, Route, Task } from '../types';
 
 export const mockUsers: User[] = [
-    { id: '1', username: 'admin', role: 'admin', branch: 'Riyadh', name: 'Admin User', email: 'admin@arwa.tech' },
+    { id: '1', username: 'gm', role: 'admin', branch: 'Riyadh', name: 'General Manager', email: 'gm@arwatravelksa.com' },
     { id: '2', username: 'manager', role: 'manager', branch: 'Riyadh', name: 'Sales Manager', email: 'manager@arwa.tech' },
     { id: '3', username: 'agent', role: 'agent', branch: 'Jeddah', name: 'Sales Agent', email: 'agent@arwa.tech' },
     { id: '4', username: 'accountant', role: 'accountant', branch: 'Riyadh', name: 'Finance Accountant', email: 'accountant@arwa.tech' },

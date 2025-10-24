@@ -65,10 +65,14 @@ const CashPage: React.FC = () => {
 
     const handleInitiateHandover = (amount: number) => {
         if (!user) return;
+        // FIX: Resolved a type error by ensuring a complete `CashHandover` object with `id`, `dateInitiated`, and `status` properties is passed to the `initiateHandover` function.
         initiateHandover({
+            id: `CH-${Date.now()}`,
             agentId: user.id,
             agentName: user.name,
             amount,
+            dateInitiated: new Date().toISOString(),
+            status: 'pending'
         });
         setIsModalOpen(false);
     };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,8 +7,8 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 const LoginPage: React.FC = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('gm@arwatravelksa.com');
+    const [password, setPassword] = useState('Airbus@320');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
@@ -22,13 +21,13 @@ const LoginPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const user = await login(username, password);
+            const user = await login(email, password);
             if (user) {
                 triggerAnimation('login', user.name, () => {
                      navigate('/dashboard');
                 });
             } else {
-                setError('Invalid username or password.');
+                setError('Invalid email or password.');
                 setIsLoading(false);
             }
         } catch (err: any) {
@@ -69,10 +68,10 @@ const LoginPage: React.FC = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
-                        type="text"
-                        placeholder="Username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
                     />

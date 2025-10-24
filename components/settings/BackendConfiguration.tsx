@@ -1,52 +1,46 @@
-
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { useApp } from '../../contexts/AppContext';
 import { CheckCircle, AlertTriangle, XCircle, ExternalLink } from 'lucide-react';
 
 const BackendConfiguration: React.FC = () => {
-    const { isLiveMode, backendUrl, setBackendAndSwitchToLive, switchToDemoMode, isLoading } = useApp();
-    const [urlInput, setUrlInput] = useState(backendUrl || '');
+    const { isLiveMode, setBackendAndSwitchToLive, switchToDemoMode, isLoading } = useApp();
+    const [urlInput, setUrlInput] = useState('');
+    const [anonKeyInput, setAnonKeyInput] = useState('');
     const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
     const [testMessage, setTestMessage] = useState('');
 
     useEffect(() => {
-        setUrlInput(backendUrl || '');
-    }, [backendUrl]);
+        setUrlInput(localStorage.getItem('supabaseUrl_arwa') || '');
+        setAnonKeyInput(localStorage.getItem('supabaseAnonKey_arwa') || '');
+    }, [isLiveMode]);
 
     const handleTestConnection = async () => {
-        if (!urlInput) {
+        if (!urlInput || !anonKeyInput) {
             setTestStatus('error');
-            setTestMessage('URL cannot be empty.');
+            setTestMessage('URL and Anon Key cannot be empty.');
             return;
         }
         setTestStatus('testing');
-        setTestMessage('Pinging backend...');
+        setTestMessage('Pinging Supabase backend...');
         try {
-            const response = await fetch(urlInput, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'testConnection' }),
-                redirect: 'follow',
-            });
-            if (!response.ok) throw new Error('Network response was not OK.');
-            const result = await response.json();
-            if (result.status === 'success') {
-                setTestStatus('success');
-                setTestMessage('Success! Connection is working.');
-            } else {
-                throw new Error(result.message || 'Backend responded with an error.');
-            }
-        } catch (err) {
+            const testClient = createClient(urlInput, anonKeyInput);
+            const { error } = await testClient.from('customers').select('id', { count: 'exact', head: true });
+            if (error) throw error;
+            
+            setTestStatus('success');
+            setTestMessage('Success! Connection is working.');
+        } catch (err: any) {
             setTestStatus('error');
-            setTestMessage('Connection failed. Check URL, CORS, and deployment settings.');
+            setTestMessage(`Connection failed: ${err.message}. Check URL and Anon Key.`);
             console.error(err);
         }
     };
     
     const handleSaveAndSwitch = async () => {
-        const success = await setBackendAndSwitchToLive(urlInput);
+        const success = await setBackendAndSwitchToLive(urlInput, anonKeyInput);
         if(!success) {
             setTestStatus('error');
             setTestMessage('Failed to save. Please test the connection first.');
@@ -57,13 +51,7 @@ const BackendConfiguration: React.FC = () => {
     return (
         <Card className="p-6">
             <h2 className="text-xl font-bold text-white mb-1">Backend Configuration</h2>
-            <p className="text-slate-400 mb-4">Switch between offline demo mode and live production mode connected to your Google Sheet.</p>
-            
-            <a href="https://github.com/MAlthaf-dev/arwa-app-suite/blob/main/SETUP_GUIDE.md" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-sky-400 hover:text-sky-300 mb-4">
-                <ExternalLink className="w-4 h-4" />
-                View Full Setup Guide on GitHub
-            </a>
-
+            <p className="text-slate-400 mb-4">Switch between offline demo mode and live production mode connected to your Supabase project.</p>
 
             {isLiveMode ? (
                  <div className="bg-green-900/40 border border-green-700/60 rounded-lg p-4 flex items-center justify-between">
@@ -71,7 +59,7 @@ const BackendConfiguration: React.FC = () => {
                         <CheckCircle className="w-6 h-6 text-green-400" />
                         <div>
                             <p className="font-bold text-white">Live Mode is Active</p>
-                            <p className="text-sm text-green-300">App is connected to your Google Sheet backend.</p>
+                            <p className="text-sm text-green-300">App is connected to your Supabase backend.</p>
                         </div>
                     </div>
                     <Button variant="secondary" onClick={switchToDemoMode}>Switch to Demo Mode</Button>
@@ -87,24 +75,37 @@ const BackendConfiguration: React.FC = () => {
             )}
             
             <div className="mt-4 space-y-3">
-                 <div>
-                    <label htmlFor="backendUrl" className="block text-sm font-medium text-slate-300 mb-1">
-                        Google Apps Script URL
-                    </label>
-                    <input
-                        id="backendUrl"
-                        type="url"
-                        value={urlInput}
-                        onChange={(e) => {
-                            setUrlInput(e.target.value);
-                            setTestStatus('idle');
-                        }}
-                        placeholder="https://script.google.com/macros/s/..."
-                        className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
-                        disabled={isLoading}
-                    />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="supabaseUrl" className="block text-sm font-medium text-slate-300 mb-1">
+                            Supabase Project URL
+                        </label>
+                        <input
+                            id="supabaseUrl"
+                            type="url"
+                            value={urlInput}
+                            onChange={(e) => { setUrlInput(e.target.value); setTestStatus('idle'); }}
+                            placeholder="https://your-project-ref.supabase.co"
+                            className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                            disabled={isLoading}
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="supabaseKey" className="block text-sm font-medium text-slate-300 mb-1">
+                            Supabase Anon Key (public)
+                        </label>
+                        <input
+                            id="supabaseKey"
+                            type="text"
+                            value={anonKeyInput}
+                            onChange={(e) => { setAnonKeyInput(e.target.value); setTestStatus('idle'); }}
+                            placeholder="ey..."
+                            className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#D10028]/80"
+                            disabled={isLoading}
+                        />
+                    </div>
                 </div>
-                 <div className="flex items-center justify-between gap-4">
+                 <div className="flex items-center justify-between gap-4 pt-2">
                      <div className="flex items-center gap-3 min-h-[44px]">
                         {testStatus === 'success' && <CheckCircle className="w-5 h-5 text-green-400" />}
                         {testStatus === 'error' && <AlertTriangle className="w-5 h-5 text-red-400" />}

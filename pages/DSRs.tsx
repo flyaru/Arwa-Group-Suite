@@ -137,7 +137,12 @@ const DSRsPage: React.FC = () => {
         // 1. Find or create customer
         let customer = customers.find(c => c.phone === customerData.phone);
         if (!customer) {
-            customer = await addCustomer(customerData);
+            // FIX: Corrected an error where `addCustomer` was called with an incomplete `Customer` object by adding the missing `id` and `totalSpend` properties.
+            customer = await addCustomer({
+                ...customerData,
+                id: `CUST-${Date.now()}`,
+                totalSpend: 0,
+            });
         }
 
         // 2. Create DSR with 'draft' status
@@ -203,7 +208,9 @@ const DSRsPage: React.FC = () => {
         
         // 2. Create an unpaid supplier bill if a supplier is linked
         if (dsrToSubmit.supplierId) {
-            const newBill: Omit<SupplierBill, 'id'> = {
+            // FIX: Resolved an issue where `addSupplierBill` was called with an incomplete `SupplierBill` object by adding the required `id` property.
+            const newBill: SupplierBill = {
+                id: `BILL-${Date.now()}`,
                 billNo: `B-${dsrToSubmit.pnr || dsrToSubmit.id.slice(-4)}`,
                 supplierId: dsrToSubmit.supplierId,
                 dsrId: dsrToSubmit.id,

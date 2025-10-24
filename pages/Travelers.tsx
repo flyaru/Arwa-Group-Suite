@@ -13,7 +13,8 @@ const TravelersPage: React.FC = () => {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
     const handleSaveTraveler = (newTravelerData: Omit<Traveler, 'id'>) => {
-        addTraveler(newTravelerData);
+        // FIX: Corrected a type error where `addTraveler` was called with an incomplete `Traveler` object by adding the required `id` property before saving.
+        addTraveler({ ...newTravelerData, id: `TR-${Date.now()}` });
         setIsFormModalOpen(false);
     };
 

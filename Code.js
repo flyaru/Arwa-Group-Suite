@@ -8,7 +8,7 @@
 //  4. IMPORTANT: You must create a NEW deployment version every time you update this script.
 // ============================================================================
 
-const SPREADSHEET_ID = "1OLCDE_fSLvgsuR51YgSIQ0zF16bRfmfi4ouQdJBegjk"; // <-- IMPORTANT: PASTE YOUR SPREADSHEET ID HERE
+const SPREADSHEET_ID = "1o4luljr6cHNLimc8rLlDL6X6X9CQTBihl2AuGK7sGSk"; // <-- IMPORTANT: PASTE YOUR SPREADSHEET ID HERE
 
 // --- Centralized CORS Headers ---
 // These headers are essential for allowing the frontend web application to communicate with this script.
@@ -70,7 +70,7 @@ function doPost(e) {
     }
      return jsonResponse('success', responseData, '');
   } catch (error) {
-    return jsonResponse('error', null, error.message);
+    return jsonResponse('error', null, error.toString());
   }
 }
 

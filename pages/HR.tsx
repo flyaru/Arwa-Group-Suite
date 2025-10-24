@@ -34,10 +34,13 @@ const HRPage: React.FC = () => {
     
     const handleSaveLeaveRequest = (data: { startDate: string; endDate: string; reason: string; }) => {
         if (!user) return;
+        // FIX: Corrected an error where `requestLeave` was called with an incomplete `LeaveRequest` object by adding the required `id` and `status` properties.
         requestLeave({
+            id: `LR-${Date.now()}`,
             ...data,
             employeeId: user.id,
             employeeName: user.name,
+            status: 'pending'
         });
         setIsLeaveModalOpen(false);
     };
@@ -56,7 +59,8 @@ const HRPage: React.FC = () => {
         if (id) { // Editing existing employee
             updateEmployee({ ...employeeData, id });
         } else { // Adding new employee
-            addEmployee(employeeData);
+            // FIX: Resolved an issue where `addEmployee` was called with an incomplete `User` object by adding the mandatory `id` property before saving.
+            addEmployee({ ...employeeData, id: `USER-${Date.now()}`});
         }
         setIsEmployeeModalOpen(false);
     };

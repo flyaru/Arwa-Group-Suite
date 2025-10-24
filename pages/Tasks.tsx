@@ -39,7 +39,13 @@ const TasksPage: React.FC = () => {
                 updateTask({ ...originalTask, ...data });
             }
         } else { // Creating
-            addTask({ ...data, createdBy: user.id });
+            // FIX: Corrected a type error where `addTask` was called with an incomplete `Task` object by adding the required `id` and `createdAt` properties before saving.
+            addTask({ 
+                ...data, 
+                id: `TASK-${Date.now()}`,
+                createdBy: user.id,
+                createdAt: new Date().toISOString()
+            });
         }
         setIsModalOpen(false);
     };

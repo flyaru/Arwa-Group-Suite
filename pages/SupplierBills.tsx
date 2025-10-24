@@ -99,7 +99,8 @@ const SupplierBillsPage: React.FC = () => {
     };
 
     const handleSaveBill = (billData: Omit<SupplierBill, 'id' | 'status'>) => {
-        addSupplierBill({ ...billData, status: 'unpaid' });
+        // FIX: Resolved an error where `addSupplierBill` was called with an incomplete `SupplierBill` object by adding the required `id` property before saving.
+        addSupplierBill({ id: `BILL-${Date.now()}`, ...billData, status: 'unpaid' });
         setIsFormModalOpen(false);
     };
     
